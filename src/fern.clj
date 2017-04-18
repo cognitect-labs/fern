@@ -2,6 +2,13 @@
   "Flexible configuration in a Clojure map."
   (:require [clojure.string :as str]))
 
+(defn literal-dispatch-f [tag & _] tag)
+
+(defmulti literal literal-dispatch-f)
+
+(defprotocol Evaluable
+  (evaluate [this x]))
+
 (declare evaluate*)
 
 (defn add-meta [x md]
@@ -12,10 +19,10 @@
 
 (defn copy-meta [src dst] (add-meta dst (meta src)))
 
-(defn- eval-f [cfg depth]
-  (fn [x] (evaluate* x cfg (inc depth))))
+(defn- eval-f [cfg cache depth]
+  (fn [x] (evaluate* x cfg cache (inc depth))))
 
-(defn evaluate-dispatch-f [x cfg depth]
+(defn evaluate-dispatch-f [x cfg cache depth]
   #_(println "evaling x: " x "cfg: " cfg "shallow: " "depth: " depth)
   (when (> depth 100)
     (throw
@@ -36,35 +43,54 @@
 
 (defmulti evaluate* evaluate-dispatch-f)
 
-(defmethod evaluate* :number [x _ _] x)
-(defmethod evaluate* :string [x _ _] x)
-(defmethod evaluate* :keyword [x _ _] x)
+(defmethod evaluate* :number [x _ _ _] x)
+(defmethod evaluate* :string [x _ _ _] x)
+(defmethod evaluate* :keyword [x _ _ _] x)
 
-(defmethod evaluate* :symbol [x cfg depth]
+(defn- cached
+  [cache x]
+  (if (contains? @cache x)
+    (get @cache x)
+    nil))
+
+(defmethod evaluate* :symbol [x cfg cache depth]
   (if-not (contains? cfg x)
     (throw (ex-info (str "Cannot find '" x "' in the configuration. Available keys are " (str/join ", " (sort (keys cfg)))) {}))
-    (copy-meta x
-               (evaluate* (cfg x) cfg (inc depth)))))
+    (let [result (or (cached cache x)
+                     (evaluate* (cfg x) cfg cache (inc depth)))]
+      (swap! cache assoc x result)
+      result)))
 
-(defmethod evaluate* :vector [x cfg depth]
+(defmethod evaluate* :vector [x cfg cache depth]
   (copy-meta x
-             (mapv (eval-f cfg depth) x)))
+             (mapv (eval-f cfg cache depth) x)))
 
-(defmethod evaluate* :map [x cfg depth]
+(defmethod evaluate* :map [x cfg cache depth]
   (copy-meta x
-             (zipmap (map (eval-f cfg depth) (keys x))
-                     (map (eval-f cfg depth) (vals x)))))
+             (zipmap (map (eval-f cfg cache depth) (keys x))
+                     (map (eval-f cfg cache depth) (vals x)))))
 
-(defmethod evaluate* :list [x cfg depth]
-  (if  (= (first x) 'quote)
-    (second x)
-    (copy-meta x
-               (apply list (map (eval-f cfg depth) )))))
+(defmethod evaluate* :list [x cfg cache depth]
+  (cond
+    (= (first x) 'quote) (second x)
+    (= (first x) 'lit)   (copy-meta x
+                                    (apply literal (second x) (map (eval-f cfg cache depth) (drop 2 x))))
+    :else                (copy-meta x
+                                    (apply list (map (eval-f cfg cache depth) x)))))
 
-(defmethod evaluate* :default [x _ _] x)
+(defmethod evaluate* :default [x _ _ _] x)
 
+(deftype Environment [symbol-table cache]
+  Evaluable
+  (evaluate [this x]
+    (evaluate* x symbol-table cache 0))
 
-(defn evaluate [x cfg] (evaluate* x cfg 0))
+  clojure.lang.ILookup
+  (valAt [this x]
+    (get symbol-table x))
+  (valAt [this x not-found]
+    (get symbol-table x not-found)))
 
-(defn lookup [x cfg]
-  (get cfg x))
+(defn environment
+  [m]
+  (->Environment m (atom {})))
