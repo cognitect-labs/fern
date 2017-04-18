@@ -1,9 +1,5 @@
-(ns
-  "Flexible configuration in a Clojure map."
-  fern.config
-  (:refer-clojure :exclude [read-string])
-  (:require [clojure.string :as str]))
-
+(ns fern.config
+  "Flexible configuration in a Clojure map.")
 
 (declare evaluate*)
 
@@ -18,8 +14,9 @@
         {:cfg cfg :deep deep :depth depth})))
 
   (cond
-    (symbol? x) :symbol
+    (record? x) (class x)
     (map? x) :map
+    (symbol? x) :symbol
     (keyword? x) :keyword
     (vector? x) :vector
     (number? x) :number
