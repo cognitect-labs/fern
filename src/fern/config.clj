@@ -7,6 +7,7 @@
   (fn [x] (evaluate* x cfg shallow (inc depth))))
 
 (defn evaluate-dispatch-f [x cfg shallow depth]
+  #_(println "evaling x: " x "cfg: " cfg "shallow: " shallow "depth: " depth)
   (when (> depth 100)
     (throw 
       (ex-info
@@ -49,7 +50,7 @@
 (defmethod evaluate* :list [x cfg shallow depth]
   (cond
     (= (first x) 'quote) (second x)
-    shallow              (map (eval-f cfg shallow depth) x)
+    (not shallow)              (apply list (map (eval-f cfg shallow depth) x))
     :default             x))
 
 (defmethod evaluate* :default [x _ _ _] x)
