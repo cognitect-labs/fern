@@ -3,6 +3,14 @@
 
 (declare evaluate*)
 
+(defn add-meta [x md]
+  #_(println "add meta: " x " md: " md)
+  (if (and md (instance? clojure.lang.IObj x))
+    (with-meta x md)
+    x))
+
+(defn copy-meta [src dst] (add-meta dst (meta src)))
+
 (defn- eval-f [cfg shallow depth]
   (fn [x] (evaluate* x cfg shallow (inc depth))))
 
@@ -34,23 +42,28 @@
 (defmethod evaluate* :symbol [x cfg shallow depth]
   (if shallow
     x
-    (evaluate* (cfg x) cfg shallow (inc depth))))
+    (copy-meta x 
+               (evaluate* (cfg x) cfg shallow (inc depth)))))
 
 (defmethod evaluate* :vector [x cfg shallow depth]
   (if shallow
     x
-    (mapv (eval-f cfg shallow depth) x)))
+    (copy-meta 
+      x
+      (mapv (eval-f cfg shallow depth) x))))
 
 (defmethod evaluate* :map [x cfg shallow depth]
   (if shallow
     x
-    (zipmap (map (eval-f cfg shallow depth) (keys x))
-            (map (eval-f cfg shallow depth) (vals x)))))
+    (copy-meta x
+              (zipmap (map (eval-f cfg shallow depth) (keys x))
+                      (map (eval-f cfg shallow depth) (vals x))))))
 
 (defmethod evaluate* :list [x cfg shallow depth]
   (cond
     (= (first x) 'quote) (second x)
-    (not shallow)              (apply list (map (eval-f cfg shallow depth) x))
+    (not shallow)        (copy-meta x
+                                    (apply list (map (eval-f cfg shallow depth) x)))
     :default             x))
 
 (defmethod evaluate* :default [x _ _ _] x)
