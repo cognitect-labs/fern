@@ -22,6 +22,13 @@
     '{foo [bar] bar 5}   [5]
     '{foo b b c c d d 5} 5))
 
+
+(deftest test-fern-quote
+  (are [cfg expected] (= expected (f/evaluate (f/environment cfg) 'foo))
+    '{foo (fern/quote bar)}         'bar
+    '{foo (fern/quote 'bar)}        '(quote bar)
+    '{foo (fern/quote (quote bar))} '(quote bar)))
+
 (def fern-with-lits
   "{fn :russ
     ln :olsen
