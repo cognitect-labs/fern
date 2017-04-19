@@ -2,7 +2,7 @@
   "Flexible configuration in a Clojure map."
   (:require [clojure.string :as str]))
 
-(defn literal-dispatch-f [tag & _] tag)
+(defn- literal-dispatch-f [tag & _] tag)
 
 (defmulti literal literal-dispatch-f)
 
@@ -11,24 +11,24 @@
 
 (declare evaluate*)
 
-(defn add-meta [x md]
+(defn- add-meta [x md]
   #_(println "add meta: " x " md: " md)
   (if (and md (instance? clojure.lang.IObj x))
     (with-meta x md)
     x))
 
-(defn copy-meta [src dst] (add-meta dst (meta src)))
+(defn- copy-meta [src dst] (add-meta dst (meta src)))
 
 (defn- eval-f [cfg cache depth]
   (fn [x] (evaluate* x cfg cache (inc depth))))
 
-(defn evaluate-dispatch-f [x cfg cache depth]
+(defn- evaluate-dispatch-f [x cfg cache depth]
   #_(println "evaling x: " x "cfg: " cfg "shallow: " "depth: " depth)
   (when (> depth 100)
     (throw
       (ex-info
         (str "Runnaway evaluation recursion while evaluating [" x "].")
-        {:cfg cfg :depth depth})))
+        {:expression x :cfg cfg :depth depth})))
 
   (cond
     (record? x) (class x)
@@ -89,7 +89,11 @@
   (valAt [this x]
     (get symbol-table x))
   (valAt [this x not-found]
-    (get symbol-table x not-found)))
+    (get symbol-table x not-found))
+    
+  Object
+  (toString [_]
+     (str "Env:" symbol-table)))
 
 (defn environment
   [m]
