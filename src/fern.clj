@@ -72,11 +72,11 @@
 
 (defmethod evaluate* :list [x cfg cache depth]
   (cond
-    (= (first x) 'quote) (second x)
-    (= (first x) 'lit)   (copy-meta x
-                                    (apply literal (second x) (map (eval-f cfg cache depth) (drop 2 x))))
-    :else                (copy-meta x
-                                    (apply list (map (eval-f cfg cache depth) x)))))
+    (= (first x) 'fern/quote) (second x)
+    (= (first x) 'lit)        (copy-meta x
+                                         (apply literal (second x) (map (eval-f cfg cache depth) (drop 2 x))))
+    :else                     (copy-meta x
+                                         (apply list (map (eval-f cfg cache depth) x)))))
 
 (defmethod evaluate* :default [x _ _ _] x)
 
