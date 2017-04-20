@@ -12,7 +12,6 @@
   "Tools for interactive development with the REPL. This file should
   not be included in a production build of the application."
   (:require
-   [clojure.core.async :as async :refer [<! <!! alt!!]]
    [clojure.java.io :as io]
    [clojure.java.javadoc :refer [javadoc]]
    [clojure.pprint :refer [pprint]]
