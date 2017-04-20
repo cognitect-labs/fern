@@ -7,7 +7,7 @@
 
 (deftest test-missing-key
   (is (thrown? ExceptionInfo (f/evaluate (f/environment {}) 'foo)))
-  (is (thrown? ExceptionInfo (f/evaluate (f/environment '{foo bar}) 'foo))))
+  (is (thrown? ExceptionInfo (f/evaluate (f/environment '{foo @bar}) 'foo))))
 
 (deftest test-evaluate-shallow
   (are [cfg expected] (= expected (get (f/environment cfg) 'foo))
@@ -19,20 +19,20 @@
   (are [cfg expected] (= expected (f/evaluate (f/environment cfg) 'foo))
     '{foo 5}             5
     '{foo [5]}           [5]
-    '{foo [bar] bar 5}   [5]
-    '{foo b b c c d d 5} 5))
+    '{foo [@bar] bar 5}   [5]
+    '{foo @b b @c c @d d 5} 5))
 
 
 (deftest test-fern-quote
   (are [cfg expected] (= expected (f/evaluate (f/environment cfg) 'foo))
-    '{foo (fern/quote bar)}         'bar
-    '{foo (fern/quote 'bar)}        '(quote bar)
-    '{foo (fern/quote (quote bar))} '(quote bar)))
+    '{foo (quote bar)}         'bar
+    '{foo (quote 'bar)}        '(quote bar)
+    '{foo (quote (quote bar))} '(quote bar)))
 
 (def fern-with-lits
   "{fn :russ
     ln :olsen
-    person (lit human fn ln)
+    person (lit human @fn @ln)
    }")
 
 (defmethod f/literal 'human
@@ -48,9 +48,9 @@
     (is (= '(:russ :olsen) (f/evaluate cfg 'person)))))
 
 (def diamond-reference
-  "{A [B C]
-    B D
-    C D
+  "{A [@B @C]
+    B @D
+    C @D
     D (lit human \"Russ\" \"Olsen\")}")
 
 (deftest test-identical-objects

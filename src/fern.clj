@@ -11,6 +11,16 @@
 
 (declare evaluate*)
 
+(defn- symbol-not-found
+  [x keys]
+  (str "Cannot find '" x "' in the configuration. Available keys are " (str/join ", " (sort keys))))
+
+(defn- assert-symbol-exists
+  [symbol-table x]
+  (when-not (contains? symbol-table x)
+    (throw (ex-info (symbol-not-found x (keys symbol-table)) {}))))
+
+
 (defn- add-meta [x md]
   #_(println "add meta: " x " md: " md)
   (if (and md (instance? clojure.lang.IObj x))
@@ -46,15 +56,16 @@
 (defmethod evaluate* :number [x _ _ _] x)
 (defmethod evaluate* :string [x _ _ _] x)
 (defmethod evaluate* :keyword [x _ _ _] x)
+(defmethod evaluate* :symbol [x _ _ _] x)
 
-(defmethod evaluate* :symbol [x cfg cache depth]
-  (if-not (contains? cfg x)
-    (throw (ex-info (str "Cannot find '" x "' in the configuration. Available keys are " (str/join ", " (sort (keys cfg)))) {}))
-    (let [result (if (contains? @cache x)
-                   (get @cache x)
-                   (evaluate* (cfg x) cfg cache (inc depth)))]
-      (swap! cache assoc x result)
-      result)))
+(defn deref-symbol [x cfg cache depth]
+  {:pre [(symbol? x)]}
+  (assert-symbol-exists cfg x)
+  (let [result (if (contains? @cache x)
+                 (get @cache x)
+                 (evaluate* (cfg x) cfg cache (inc depth)))]
+    (swap! cache assoc x result)
+    result))
 
 (defmethod evaluate* :vector [x cfg cache depth]
   (copy-meta x
@@ -67,18 +78,20 @@
 
 (defmethod evaluate* :list [x cfg cache depth]
   (cond
-    (= (first x) 'fern/quote) (second x)
-    (= (first x) 'lit)        (copy-meta x
-                                         (apply literal (second x) (map (eval-f cfg cache depth) (drop 2 x))))
-    :else                     (copy-meta x
-                                         (apply list (map (eval-f cfg cache depth) x)))))
+    (= (first x) 'clojure.core/deref)      (deref-symbol (second x) cfg cache depth)
+    (= (first x) 'quote)                   (second x)
+    (= (first x) 'lit)                     (copy-meta x
+                                                      (apply literal (second x) (map (eval-f cfg cache depth) (drop 2 x))))
+    :else                                  (copy-meta x
+                                                      (apply list (map (eval-f cfg cache depth) x)))))
 
 (defmethod evaluate* :default [x _ _ _] x)
 
 (deftype Environment [symbol-table cache]
   Evaluable
   (evaluate [this x]
-    (evaluate* x symbol-table cache 0))
+    (assert-symbol-exists symbol-table x)
+    (evaluate* (get symbol-table x) symbol-table cache 0))
 
   clojure.lang.ILookup
   (valAt [this x]
