@@ -47,17 +47,12 @@
 (defmethod evaluate* :string [x _ _ _] x)
 (defmethod evaluate* :keyword [x _ _ _] x)
 
-(defn- cached
-  [cache x]
-  (if (contains? @cache x)
-    (get @cache x)
-    nil))
-
 (defmethod evaluate* :symbol [x cfg cache depth]
   (if-not (contains? cfg x)
     (throw (ex-info (str "Cannot find '" x "' in the configuration. Available keys are " (str/join ", " (sort (keys cfg)))) {}))
-    (let [result (or (cached cache x)
-                     (evaluate* (cfg x) cfg cache (inc depth)))]
+    (let [result (if (contains? @cache x)
+                   (get @cache x)
+                   (evaluate* (cfg x) cfg cache (inc depth)))]
       (swap! cache assoc x result)
       result)))
 
