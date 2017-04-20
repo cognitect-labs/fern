@@ -25,6 +25,6 @@
 
 (defn run-tests []
   (binding [clojure.test/*test-out* *out*]
-    (clojure.test/run-all-tests #"fern.+-test")))
+    (clojure.test/run-all-tests #"fern.*-test")))
 
 (s/check-asserts true)
