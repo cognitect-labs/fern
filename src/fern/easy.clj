@@ -1,8 +1,8 @@
 (ns fern.easy
   (:require [fern :as f]
-           [clojure.java.io :as io]
-           [clojure.tools.reader :as r]
-           [clojure.tools.reader.reader-types :as rt]))
+            [clojure.java.io :as io]
+            [clojure.tools.reader :as r]
+            [clojure.tools.reader.reader-types :as rt]))
 
 (defn string->environment
   [s]

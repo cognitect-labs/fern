@@ -17,17 +17,19 @@
 
 (deftest test-evaluate-deep
   (are [cfg expected] (= expected (f/evaluate (f/environment cfg) 'foo))
-    '{foo 5}             5
-    '{foo [5]}           [5]
-    '{foo [@bar] bar 5}   [5]
-    '{foo @b b @c c @d d 5} 5))
+    '{foo 5}                   5
+    '{foo [5]}                 [5]
+    '{foo [@bar] bar 5}        [5]
+    '{foo @b b @c c @d d 5}    5))
 
 
 (deftest test-fern-quote
   (are [cfg expected] (= expected (f/evaluate (f/environment cfg) 'foo))
-    '{foo (quote bar)}         'bar
-    '{foo (quote 'bar)}        '(quote bar)
-    '{foo (quote (quote bar))} '(quote bar)))
+    '{foo (quote bar)}                      'bar
+    '{foo (quote 'bar)}                     '(quote bar)
+    '{foo (quote (quote bar))}              '(quote bar)
+    '{foo '(clojure.core/deref bar)}        '(clojure.core/deref bar)
+    '{foo (quote (clojure.core/deref bar))} '(clojure.core/deref bar)))
 
 (def fern-with-lits
   "{fn :russ
