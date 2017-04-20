@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [clojure.tools.reader :as r]
             [clojure.tools.reader.reader-types :as rt]
+            [fern.easy :as fe]
             [fern :as f])
   (:import clojure.lang.ExceptionInfo))
 
@@ -30,6 +31,21 @@
     '{foo (quote (quote bar))}              '(quote bar)
     '{foo '(clojure.core/deref bar)}        '(clojure.core/deref bar)
     '{foo (quote (clojure.core/deref bar))} '(clojure.core/deref bar)))
+
+(def sample (fe/file->environment "test/sample.fern"))
+
+;; TBD Where is our file name???
+
+(deftest test-metadata
+  (testing "value for symbol"
+    (are [sym md] (= md (meta (f/evaluate sample sym)))
+         'fullname {:line 3 :column 11 :end-line 3 :end-column 20}
+         'revname  {:line 5 :column 3 :end-line 8 :end-column 4}
+         'nameref {:line 5 :column 3 :end-line 8 :end-column 4}))
+
+  (testing "components of value for symbol"
+    (are [sym extr md] (= md (meta (get-in (f/evaluate sample sym) extr)))
+         'revname  [0] {:line 6 :column 5 :end-line 6 :end-column 10})))
 
 (def fern-with-lits
   "{fn :russ
