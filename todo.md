@@ -1,5 +1,7 @@
 Tasks
 
+* X Allow evaluate to use the whole config for strange loopiness
+
 * Look at metadata
   * Lets write some tests
 
@@ -33,4 +35,3 @@ X * Make Environment Assoicative
 
 
 * X Make deref'ing symbols explicit with @
-

@@ -54,7 +54,7 @@
   (testing "value for symbol"
     (are [sym md] (= md (meta (f/evaluate sample sym)))
          'fullname {:file "test/sample.fern"
-                    :source "[@fn @ln]" 
+                    :source "[@fn @ln]"
                     :line 3 :column 11 :end-line 3 :end-column 20}
          'revname  {:source "[\n    [@ln]\n    [@fn]\n  ]"
                     :file "test/sample.fern"
@@ -100,3 +100,9 @@
   (let [cfg               (string->environment diamond-reference)
         [person2 person1] (f/evaluate cfg 'A)]
     (is (identical? person1 person2))))
+
+(deftest test-reflective-configurations
+  (let [cfg (fe/load-environment "test/self-referential.fern")]
+    (is (= 24 (f/evaluate cfg 'foo)))
+    (is (= cfg (f/evaluate cfg 'baz)))
+    ))
