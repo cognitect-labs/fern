@@ -6,6 +6,20 @@
             [fern :as f])
   (:import clojure.lang.ExceptionInfo))
 
+(deftest test-is-associative
+  (testing "Environment is Associative"
+    (is (= (empty (f/environment {:foo 33})) (f/environment {})))
+    (is (= (f/environment {:foo 33}) (f/environment {:foo 33})))
+    (is (= (assoc (f/environment {:foo 33}) :bar 99) (f/environment {:foo 33 :bar 99})))
+    (is (= (get (f/environment {:foo 33}) :foo) 33))
+    (is (= (:bar (f/environment {:foo 33}) 99) 99))
+    (is (= (:foo (f/environment {:foo 33})) 33)))
+  (testing "Environment is a Seqable"
+    (is (= (seq (f/environment {:foo 33})) (seq {:foo 33}))))
+  (testing "Environment is a Collection"
+    (is (= (.entryAt (f/environment {:foo 33}) :foo) (.entryAt {:foo 33} :foo)))
+    (is (= 2 (count (f/environment {:foo 1 :bar 2}))))))
+
 (deftest test-missing-key
   (is (thrown? ExceptionInfo (f/evaluate (f/environment {}) 'foo)))
   (is (thrown? ExceptionInfo (f/evaluate (f/environment '{foo @bar}) 'foo))))
@@ -73,6 +87,9 @@
   (let [cfg (string->environment fern-with-lits)]
     (is (= '(:russ :olsen) (f/evaluate cfg 'person)))))
 
+(deftest test-missing-literal
+  (is (thrown-with-msg? ExceptionInfo #"Undefined literal.*aaa"
+                        (f/evaluate (f/environment '{foo (lit aaa)}) 'foo))))
 (def diamond-reference
   "{A [@B @C]
     B @D

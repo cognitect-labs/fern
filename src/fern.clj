@@ -6,6 +6,12 @@
 
 (defmulti literal literal-dispatch-f)
 
+(defmethod literal :default [ & args]
+  (throw
+    (ex-info
+      (str "Undefined literal: '" (first args) "' used in expression " (cons 'lit args) ".")
+      {})))
+
 (defprotocol Evaluable
   (evaluate [this x]))
 
@@ -78,12 +84,12 @@
 
 (defmethod evaluate* :list [x cfg cache depth]
   (cond
-    (= (first x) 'clojure.core/deref)      (deref-symbol (second x) cfg cache depth)
-    (= (first x) 'quote)                   (second x)
-    (= (first x) 'lit)                     (copy-meta x
-                                                      (apply literal (second x) (map (eval-f cfg cache depth) (drop 2 x))))
-    :else                                  (copy-meta x
-                                                      (apply list (map (eval-f cfg cache depth) x)))))
+    (= (first x) 'clojure.core/deref) (deref-symbol (second x) cfg cache depth)
+    (= (first x) 'quote)              (second x)
+    (= (first x) 'lit)                (copy-meta x
+                                                 (apply literal (second x) (map (eval-f cfg cache depth) (drop 2 x))))
+    :else                             (copy-meta x
+                                                 (apply list (map (eval-f cfg cache depth) x)))))
 
 (defmethod evaluate* :default [x _ _ _] x)
 
@@ -93,11 +99,33 @@
     (assert-symbol-exists symbol-table x)
     (evaluate* (get symbol-table x) symbol-table cache 0))
 
+  clojure.lang.Associative
+  (containsKey [this k]
+    (.containsKey symbol-table k))
+  (entryAt [this k]
+    (.entryAt symbol-table k))
+  (assoc [this k v]
+    (Environment. (assoc symbol-table k v) (atom {})))
+  
+  clojure.lang.Seqable
+  (seq [this]
+    (.seq symbol-table))
+  
+  clojure.lang.IPersistentCollection
+  (count [this]
+    (.count symbol-table))
+  (empty [this]
+    (Environment. {} (atom {})))
+  (equiv [this other]
+    (and
+      (instance? Environment other)
+      (.equiv symbol-table (.-symbol-table ^Environment other))))
+
   clojure.lang.ILookup
   (valAt [this x]
-    (get symbol-table x))
+    (.valAt symbol-table x))
   (valAt [this x not-found]
-    (get symbol-table x not-found))
+    (.valAt symbol-table x not-found))
     
   Object
   (toString [_]
