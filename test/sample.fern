@@ -1,0 +1,11 @@
+{fn "Mike"
+ ln "Nygard"
+ fullname [@fn @ln]
+ revname            ;; value of revname should be assoc with line 4
+  [
+    [@ln]           ;; assoc with line 6
+    [@fn]           ;; assoc with line 7
+  ]
+
+  nameref @revname
+}
