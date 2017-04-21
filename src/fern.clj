@@ -106,16 +106,18 @@
     (.entryAt symbol-table k))
   (assoc [this k v]
     (Environment. (assoc symbol-table k v) (atom {})))
-  
+
   clojure.lang.Seqable
   (seq [this]
     (.seq symbol-table))
-  
+
   clojure.lang.IPersistentCollection
   (count [this]
     (.count symbol-table))
   (empty [this]
     (Environment. {} (atom {})))
+  (cons  [this obj]
+    (Environment. (conj symbol-table obj) (atom {})))
   (equiv [this other]
     (and
       (instance? Environment other)
