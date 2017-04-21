@@ -27,9 +27,9 @@
     (doseq [pi plugins] (load-plugin pi))
     env))
 
-(defn load-environment 
+(defn load-environment
   ([path] (load-environment path nil))
   ([path plugin-symbol]
    (cond-> (file->environment path)
      (not (nil? plugin-symbol))
-     (load-plugin-namespaces plugin-symbol)))
+     (load-plugin-namespaces plugin-symbol))))
