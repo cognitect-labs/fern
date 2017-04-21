@@ -1,0 +1,10 @@
+{fn "Mike"
+ ln "Nygard"
+ fullname [@fn @ln]
+ revname
+  [
+    [@ln]
+    [@fn]
+  ]
+ nameref @revname
+}
