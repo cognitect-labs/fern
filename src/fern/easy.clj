@@ -1,19 +1,24 @@
 (ns fern.easy
   (:require [fern :as f]
             [clojure.java.io :as io]
-            [clojure.tools.reader :as r]
+            [clojure.tools.reader :as reader]
             [clojure.tools.reader.reader-types :as rt]))
 
 (defn string->environment
-  [s]
-  (f/environment (r/read (rt/indexing-push-back-reader s))))
+  ([s-or-reader] (string->environment s-or-reader nil))
+  ([s-or-reader filename]
+   (with-open [r (rt/indexing-push-back-reader s-or-reader)
+               r (if filename
+                   (rt/source-logging-push-back-reader r 1 filename)
+                   r)]
+     (f/environment (reader/read r)))))
 
 (def reader->environment string->environment)
 
 (defn file->environment
   [path]
   (with-open [r (io/reader path)]
-    (reader->environment r)))
+    (reader->environment r path)))
 
 (defn load-plugin [pi]
   (try
