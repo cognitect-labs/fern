@@ -27,4 +27,28 @@
   (binding [clojure.test/*test-out* *out*]
     (clojure.test/run-all-tests #"fern.*-test")))
 
+
+(defn t
+  "Require fern and fern-test and run tests."
+  []
+  (require :reload '[fern :as f])
+  (require :reload '[fern-test :as ft])
+  (run-tests))
+
+(defmacro rr
+  ([the-ns] (rr the-ns nil))
+  ([the-ns as-name]
+    (if as-name
+      `(require '~the-ns :reload))
+      `(require '[~the-ns :as ~as-name] :reload)))
+
+(defn r
+  "Reload the current namespace."
+  []
+  (require :reload (ns-name *ns*)))
+
 (s/check-asserts true)
+
+(doc t)
+(doc rr)
+(doc r)
