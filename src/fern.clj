@@ -38,7 +38,10 @@
 (defn- eval-f [cfg depth]
   (fn [x] (evaluate* x cfg (inc depth))))
 
-(defn- evaluate-dispatch-f [x cfg depth]
+(defn listy? [x]
+  (or (list? x) (instance? clojure.lang.Cons x)))
+
+(defn evaluate-dispatch-f [x cfg depth]
   #_(println "evaling x: " x "cfg: " cfg "shallow: " "depth: " depth)
   (when (> depth 100)
     (throw
@@ -47,22 +50,22 @@
         {:expression x :cfg cfg :depth depth})))
 
   (cond
+    (and (listy? x) (= (first x) 'lit)) :literal
+    (and (listy? x) (= (first x) 'quote)) :quote
+    (and (listy? x) (= (first x) 'clojure.core/deref)) :deref
+    (listy? x) :list
+    (symbol? x) :identity
+    (keyword? x) :identity
+    (number? x) :identity
+    (string? x) :identity
+    (vector? x) :vector
     (record? x) (class x)
     (map? x) :map
-    (symbol? x) :symbol
-    (keyword? x) :keyword
-    (vector? x) :vector
-    (number? x) :number
-    (string? x) :string
-    (list? x) :list
     :default (class x)))
 
 (defmulti evaluate* evaluate-dispatch-f)
 
-(defmethod evaluate* :number [x _ _] x)
-(defmethod evaluate* :string [x _ _] x)
-(defmethod evaluate* :keyword [x _ _] x)
-(defmethod evaluate* :symbol [x _ _] x)
+(defmethod evaluate* :identity [x _ _] #_(println "identity" x ) x)
 
 (defn deref-symbol [x cfg depth]
   {:pre [(symbol? x)]}
@@ -82,10 +85,33 @@
              (mapv (eval-f cfg depth) x)))
 
 (defmethod evaluate* :map [x cfg depth]
+  #_(println "eval map:" x)
   (copy-meta x
              (zipmap (map (eval-f cfg depth) (keys x))
                      (map (eval-f cfg depth) (vals x)))))
 
+
+(defmethod evaluate* :list [x cfg depth]
+  #_(println "eval list:" x)
+  (copy-meta x (apply list (map (eval-f cfg depth) x))))
+
+(defmethod evaluate* :quote [x cfg depth]
+  #_(println "eval quote:" x)
+  (second x))
+
+(defmethod evaluate* :literal [x cfg depth]
+  #_(println "eval lit")
+  (copy-meta x 
+             (apply 
+                 literal 
+                 (second x) 
+                 (map (eval-f cfg depth) (drop 2 x)))))
+
+(defmethod evaluate* :deref [x cfg depth]
+  #_(println "***derefing " x)
+  (deref-symbol (second x) cfg depth))
+
+(comment
 (defmethod evaluate* :list [x cfg depth]
   (cond
     (= (first x) 'clojure.core/deref) (deref-symbol (second x) cfg depth)
@@ -94,6 +120,7 @@
                                                  (apply literal (second x) (map (eval-f cfg depth) (drop 2 x))))
     :else                             (copy-meta x
                                                  (apply list (map (eval-f cfg depth) x)))))
+)
 
 (defmethod evaluate* :default [x _ _] x)
 
