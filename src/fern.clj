@@ -35,10 +35,10 @@
 
 (defn- copy-meta [src dst] (add-meta dst (meta src)))
 
-(defn- eval-f [cfg cache depth]
-  (fn [x] (evaluate* x cfg cache (inc depth))))
+(defn- eval-f [cfg depth]
+  (fn [x] (evaluate* x cfg (inc depth))))
 
-(defn- evaluate-dispatch-f [x cfg cache depth]
+(defn- evaluate-dispatch-f [x cfg depth]
   #_(println "evaling x: " x "cfg: " cfg "shallow: " "depth: " depth)
   (when (> depth 100)
     (throw
@@ -59,45 +59,49 @@
 
 (defmulti evaluate* evaluate-dispatch-f)
 
-(defmethod evaluate* :number [x _ _ _] x)
-(defmethod evaluate* :string [x _ _ _] x)
-(defmethod evaluate* :keyword [x _ _ _] x)
-(defmethod evaluate* :symbol [x _ _ _] x)
+(defmethod evaluate* :number [x _ _] x)
+(defmethod evaluate* :string [x _ _] x)
+(defmethod evaluate* :keyword [x _ _] x)
+(defmethod evaluate* :symbol [x _ _] x)
 
-(defn deref-symbol [x cfg cache depth]
+(defn deref-symbol [x cfg depth]
   {:pre [(symbol? x)]}
-  (assert-symbol-exists cfg x)
-  (let [result (if (contains? @cache x)
-                 (get @cache x)
-                 (evaluate* (cfg x) cfg cache (inc depth)))]
-    (swap! cache assoc x result)
-    result))
+  (if (= '*fern* x)
+    cfg
+    (do
+      (assert-symbol-exists cfg x)
+      (let [cache  (.-cache cfg)
+            result (if (contains? @cache x)
+                     (get @cache x)
+                     (evaluate* (get cfg x) cfg (inc depth)))]
+        (swap! cache assoc x result)
+        result))))
 
-(defmethod evaluate* :vector [x cfg cache depth]
+(defmethod evaluate* :vector [x cfg depth]
   (copy-meta x
-             (mapv (eval-f cfg cache depth) x)))
+             (mapv (eval-f cfg depth) x)))
 
-(defmethod evaluate* :map [x cfg cache depth]
+(defmethod evaluate* :map [x cfg depth]
   (copy-meta x
-             (zipmap (map (eval-f cfg cache depth) (keys x))
-                     (map (eval-f cfg cache depth) (vals x)))))
+             (zipmap (map (eval-f cfg depth) (keys x))
+                     (map (eval-f cfg depth) (vals x)))))
 
-(defmethod evaluate* :list [x cfg cache depth]
+(defmethod evaluate* :list [x cfg depth]
   (cond
-    (= (first x) 'clojure.core/deref) (deref-symbol (second x) cfg cache depth)
+    (= (first x) 'clojure.core/deref) (deref-symbol (second x) cfg depth)
     (= (first x) 'quote)              (second x)
     (= (first x) 'lit)                (copy-meta x
-                                                 (apply literal (second x) (map (eval-f cfg cache depth) (drop 2 x))))
+                                                 (apply literal (second x) (map (eval-f cfg depth) (drop 2 x))))
     :else                             (copy-meta x
-                                                 (apply list (map (eval-f cfg cache depth) x)))))
+                                                 (apply list (map (eval-f cfg depth) x)))))
 
-(defmethod evaluate* :default [x _ _ _] x)
+(defmethod evaluate* :default [x _ _] x)
 
 (deftype Environment [symbol-table cache]
   Evaluable
   (evaluate [this x]
     (assert-symbol-exists symbol-table x)
-    (evaluate* (get symbol-table x) symbol-table cache 0))
+    (evaluate* (get symbol-table x) this 0))
 
   clojure.lang.Associative
   (containsKey [this k]
@@ -106,16 +110,18 @@
     (.entryAt symbol-table k))
   (assoc [this k v]
     (Environment. (assoc symbol-table k v) (atom {})))
-  
+
   clojure.lang.Seqable
   (seq [this]
     (.seq symbol-table))
-  
+
   clojure.lang.IPersistentCollection
   (count [this]
     (.count symbol-table))
   (empty [this]
     (Environment. {} (atom {})))
+  (cons  [this obj]
+    (Environment. (conj symbol-table obj) (atom {})))
   (equiv [this other]
     (and
       (instance? Environment other)
@@ -126,7 +132,7 @@
     (.valAt symbol-table x))
   (valAt [this x not-found]
     (.valAt symbol-table x not-found))
-    
+
   Object
   (toString [_]
      (str "Env:" symbol-table)))
