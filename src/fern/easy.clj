@@ -56,10 +56,11 @@
     (pprint e)))
 
 (defn print-evaluation-history [h]
-  (print "\nI got here by evaluating these, from most recent to oldest:\n\n\t")
-  (println (str/join "\t" (map pprint-expr (reverse h)))))
+  (print "\nI got here by evaluating these, from most recent to oldest:\n")
+  (println (str/replace
+            (str/join "\n"
+             (map pprint-expr (reverse h))) #"(^|\n)" "\n\t")))
 
 (defn print-evaluation-exception [e]
   (println "Error in evaluation:" (.getMessage e))
   (print-evaluation-history (:history (ex-data e))))
-
