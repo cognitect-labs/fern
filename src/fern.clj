@@ -21,10 +21,10 @@
   (when (> (count history) 100)
     (throw
       (ex-info
-        (str "Runnaway recursion while evaluating [" x "].")
+        (str "Runaway recursion while evaluating [" x "].")
         {:expression x :cfg cfg :history history})))
 
-  (let [new-history (conj history (str "Evaluating '" x "'"))]
+  (let [new-history (conj history x)]
     (do-evaluate x cfg new-history)))
 
 (defn- symbol-not-found
@@ -113,7 +113,7 @@
   Evaluable
   (evaluate [this x]
     (assert-symbol-exists symbol-table x [])
-    (evaluate* (get symbol-table x) this [(str "Evaluate '" x "'")]))
+    (evaluate* (get symbol-table x) this [(list `deref x)]))
 
   clojure.lang.Associative
   (containsKey [this k]

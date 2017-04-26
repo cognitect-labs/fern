@@ -1,6 +1,8 @@
 (ns fern.easy
   (:require [fern :as f]
             [clojure.java.io :as io]
+            [clojure.pprint :refer [pprint]]
+            [clojure.string :as str]
             [clojure.tools.reader :as reader]
             [clojure.tools.reader.reader-types :as rt]))
 
@@ -47,4 +49,17 @@
  [env]
  (doseq [k (keys env)]
    (f/evaluate env k)))
+
+
+(defn- pprint-expr [e]
+  (with-out-str
+    (pprint e)))
+
+(defn print-evaluation-history [h]
+  (print "\nI got here by evaluating these, from most recent to oldest:\n\n\t")
+  (println (str/join "\t" (map pprint-expr (reverse h)))))
+
+(defn print-evaluation-exception [e]
+  (println "Error in evaluation:" (.getMessage e))
+  (print-evaluation-history (:history (ex-data e))))
 

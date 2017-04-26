@@ -39,8 +39,9 @@
 
 
 (deftest test-recursion-limit
-  (is (thrown? ExceptionInfo (f/evaluate (f/environment '{foo @foo}) 'foo)))
-  (is (thrown? ExceptionInfo (f/evaluate (f/environment '{foo @bar bar @baz baz @foo}) 'foo))))
+  (is (thrown-with-msg? ExceptionInfo #"Runaway" (f/evaluate (f/environment '{foo @foo}) 'foo)))
+  (is (thrown-with-msg?  ExceptionInfo #"Runaway" 
+                        (f/evaluate (f/environment '{foo @bar bar @baz baz @foo}) 'foo))))
 
 
 (deftest test-fern-quote
