@@ -15,40 +15,41 @@
 (defprotocol Evaluable
   (evaluate [this x]))
 
-(declare evaluate*)
+(declare do-evaluate)
+
+(defn- evaluate* [x cfg history]
+  (when (> (count history) 100)
+    (throw
+      (ex-info
+        (str "Runnaway recursion while evaluating [" x "].")
+        {:expression x :cfg cfg :history history})))
+
+  (let [new-history (conj history (str "Evaluating '" x "'"))]
+    (do-evaluate x cfg new-history)))
 
 (defn- symbol-not-found
   [x keys]
   (str "Cannot find '" x "' in the configuration. Available keys are " (str/join ", " (sort keys))))
 
 (defn- assert-symbol-exists
-  [symbol-table x]
+  [symbol-table x history]
   (when-not (contains? symbol-table x)
-    (throw (ex-info (symbol-not-found x (keys symbol-table)) {}))))
-
+    (throw (ex-info (symbol-not-found x (keys symbol-table)) {:history history}))))
 
 (defn- add-meta [x md]
-  #_(println "add meta: " x " md: " md)
   (if (and md (instance? clojure.lang.IObj x))
     (with-meta x md)
     x))
 
 (defn- copy-meta [src dst] (add-meta dst (meta src)))
 
-(defn- eval-f [cfg depth]
-  (fn [x] (evaluate* x cfg (inc depth))))
+(defn- eval-f [cfg history]
+  (fn [x] (evaluate* x cfg history)))
 
-(defn listy? [x]
+(defn- listy? [x]
   (or (list? x) (instance? clojure.lang.Cons x)))
 
-(defn evaluate-dispatch-f [x cfg depth]
-  #_(println "evaling x: " x "cfg: " cfg "shallow: " "depth: " depth)
-  (when (> depth 100)
-    (throw
-      (ex-info
-        (str "Runnaway evaluation recursion while evaluating [" x "].")
-        {:expression x :cfg cfg :depth depth})))
-
+(defn- evaluate-dispatch-f [x cfg history]
   (cond
     (and (listy? x) (= (first x) 'lit)) :literal
     (and (listy? x) (= (first x) 'quote)) :quote
@@ -63,72 +64,56 @@
     (map? x) :map
     :default (class x)))
 
-(defmulti evaluate* evaluate-dispatch-f)
+(defmulti ^:private do-evaluate evaluate-dispatch-f)
 
-(defmethod evaluate* :identity [x _ _] #_(println "identity" x ) x)
+(defmethod do-evaluate :identity [x _ _] x)
 
-(defn deref-symbol [x cfg depth]
+(defn- deref-symbol [x cfg history]
   {:pre [(symbol? x)]}
   (if (= '*fern* x)
     cfg
     (do
-      (assert-symbol-exists cfg x)
+      (assert-symbol-exists cfg x history)
       (let [cache  (.-cache cfg)
             result (if (contains? @cache x)
                      (get @cache x)
-                     (evaluate* (get cfg x) cfg (inc depth)))]
+                     (evaluate* (get cfg x) cfg history))]
         (swap! cache assoc x result)
         result))))
 
-(defmethod evaluate* :vector [x cfg depth]
+(defmethod do-evaluate :vector [x cfg history]
   (copy-meta x
-             (mapv (eval-f cfg depth) x)))
+             (mapv (eval-f cfg history) x)))
 
-(defmethod evaluate* :map [x cfg depth]
-  #_(println "eval map:" x)
+(defmethod do-evaluate :map [x cfg history]
   (copy-meta x
-             (zipmap (map (eval-f cfg depth) (keys x))
-                     (map (eval-f cfg depth) (vals x)))))
+             (zipmap (map (eval-f cfg history) (keys x))
+                     (map (eval-f cfg history) (vals x)))))
 
 
-(defmethod evaluate* :list [x cfg depth]
-  #_(println "eval list:" x)
-  (copy-meta x (apply list (map (eval-f cfg depth) x))))
+(defmethod do-evaluate :list [x cfg history]
+  (copy-meta x (apply list (map (eval-f cfg history) x))))
 
-(defmethod evaluate* :quote [x cfg depth]
-  #_(println "eval quote:" x)
+(defmethod do-evaluate :quote [x cfg history]
   (second x))
 
-(defmethod evaluate* :literal [x cfg depth]
-  #_(println "eval lit")
+(defmethod do-evaluate :literal [x cfg history]
   (copy-meta x 
              (apply 
                  literal 
                  (second x) 
-                 (map (eval-f cfg depth) (drop 2 x)))))
+                 (map (eval-f cfg history) (drop 2 x)))))
 
-(defmethod evaluate* :deref [x cfg depth]
-  #_(println "***derefing " x)
-  (deref-symbol (second x) cfg depth))
+(defmethod do-evaluate :deref [x cfg history]
+  (deref-symbol (second x) cfg history))
 
-(comment
-(defmethod evaluate* :list [x cfg depth]
-  (cond
-    (= (first x) 'clojure.core/deref) (deref-symbol (second x) cfg depth)
-    (= (first x) 'quote)              (second x)
-    (= (first x) 'lit)                (copy-meta x
-                                                 (apply literal (second x) (map (eval-f cfg depth) (drop 2 x))))
-    :else                             (copy-meta x
-                                                 (apply list (map (eval-f cfg depth) x)))))
-)
-
-(defmethod evaluate* :default [x _ _] x)
+(defmethod do-evaluate :default [x _ _] x)
 
 (deftype Environment [symbol-table cache]
   Evaluable
   (evaluate [this x]
-    (assert-symbol-exists symbol-table x)
-    (evaluate* (get symbol-table x) this 0))
+    (assert-symbol-exists symbol-table x [])
+    (evaluate* (get symbol-table x) this [(str "Evaluate '" x "'")]))
 
   clojure.lang.Associative
   (containsKey [this k]

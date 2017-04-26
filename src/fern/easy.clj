@@ -39,3 +39,12 @@
    (cond-> (file->environment path)
      (not (nil? plugin-symbol))
      (load-plugin-namespaces! plugin-symbol))))
+
+(defn validate!
+ "Resolve all of the keys in the environment.
+  Ensures that all of the keys will work but
+  will trigger any side effects hidden in values."
+ [env]
+ (doseq [k (keys env)]
+   (f/evaluate env k)))
+
