@@ -38,6 +38,11 @@
     '{foo @b b @c c @d d 5}    5))
 
 
+(deftest test-recursion-limit
+  (is (thrown? ExceptionInfo (f/evaluate (f/environment '{foo @foo}) 'foo)))
+  (is (thrown? ExceptionInfo (f/evaluate (f/environment '{foo @bar bar @baz baz @foo}) 'foo))))
+
+
 (deftest test-fern-quote
   (are [cfg expected] (= expected (f/evaluate (f/environment cfg) 'foo))
     '{foo (quote bar)}                      'bar
