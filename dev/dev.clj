@@ -14,7 +14,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.java.javadoc :refer [javadoc]]
-   [clojure.pprint :refer [pprint]]
+   [clojure.pprint :refer [pprint pp]]
    [clojure.reflect :refer [reflect]]
    [clojure.repl :refer [apropos dir doc find-doc pst source]]
    [clojure.set :as set]
@@ -35,12 +35,14 @@
   (require :reload '[fern-test :as ft])
   (run-tests))
 
-(defmacro rr
-  ([the-ns] (rr the-ns nil))
-  ([the-ns as-name]
-    (if as-name
-      `(require '~the-ns :reload))
-      `(require '[~the-ns :as ~as-name] :reload)))
+(defmacro rr 
+  "Require given namespace with reload. Second parameter (if given)
+  is the namespace alias."
+  [& args]
+  (case (count args)
+    1 `(require :reload '~(first args))
+    2 `(require :reload '[~(first args) :as ~(second args)])))
+
 
 (defn r
   "Reload the current namespace."
