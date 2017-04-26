@@ -98,11 +98,16 @@
   (second x))
 
 (defmethod do-evaluate :literal [x cfg history]
-  (copy-meta x 
-             (apply 
-                 literal 
-                 (second x) 
-                 (map (eval-f cfg history) (drop 2 x)))))
+  (copy-meta x
+             (try
+               (apply
+                literal
+                (second x)
+                (map (eval-f cfg history) (drop 2 x)))
+               (catch Exception ex
+                 (throw (ex-info (.getMessage ex)
+                                 (merge {:history history} (ex-data ex))
+                                 ex))))))
 
 (defmethod do-evaluate :deref [x cfg history]
   (deref-symbol (second x) cfg history))
