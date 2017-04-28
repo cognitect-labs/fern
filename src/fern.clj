@@ -150,6 +150,18 @@
   (valAt [this x not-found]
     (.valAt symbol-table x not-found))
 
+  clojure.lang.IPersistentMap
+  (assocEx [this key val]
+    (Environment. (.assocEx symbol-table key val) (atom {})))
+  (without [this key]
+    (Environment. (dissoc symbol-table key) (atom {})))
+  (iterator [this]
+    (.iterator symbol-table))
+  (forEach [this action]
+    (.forEach symbol-table action))
+  (spliterator [this]
+    (.spliterator symbol-table))
+
   Object
   (toString [_]
      (str "Env:" symbol-table)))
