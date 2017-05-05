@@ -2,16 +2,6 @@
   "Flexible configuration in a Clojure map."
   (:require [clojure.string :as str]))
 
-(defn- literal-dispatch-f [tag & _] tag)
-
-(defmulti literal literal-dispatch-f)
-
-(defmethod literal :default [ & args]
-  (throw
-    (ex-info
-      (str "Undefined literal: '" (first args) "' used in expression " (cons 'lit args) ".")
-      {})))
-
 (defprotocol Evaluable
   (evaluate [this x]))
 
@@ -29,7 +19,6 @@
 
   (let [new-history (conj history x)]
     (do-evaluate x cfg new-history)))
-
 
 (defn- symbol-not-found
   [x history keys]
@@ -113,7 +102,6 @@
 
 (defmethod do-evaluate :quote [x cfg history]
   (second x))
-
 
 (defmethod do-evaluate :deref [x cfg history]
   (deref-symbol (second x) cfg history))
