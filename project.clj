@@ -1,4 +1,4 @@
-(defproject com.cognitect/fern "0.1.0"
+(defproject com.cognitect/fern "0.1.1-SNAPSHOT"
   :description  "Plain but useful language for data"
   :url          "https://github.com/cognitect-labs/fern"
   :license      {:name "Eclipse Public License"
