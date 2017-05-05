@@ -35,7 +35,7 @@
   (require :reload '[fern-test :as ft])
   (run-tests))
 
-(defmacro rr 
+(defmacro rr
   "Require given namespace with reload. Second parameter (if given)
   is the namespace alias."
   [& args]
