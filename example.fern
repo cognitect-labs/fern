@@ -1,0 +1,5 @@
+{host "localhost"
+ timeout 4000
+ server-1 {:host @host :request-timeout @timeout :port 8000}
+ server-2 {:host @host :request-timeout @timeout :port 8010}
+ server-3 {:host @host :request-timeout @timeout :port 8020}}
