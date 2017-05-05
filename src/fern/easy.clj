@@ -7,6 +7,10 @@
             [clojure.tools.reader.reader-types :as rt]))
 
 (defn string->environment
+  "Read a Fern environment from a string or a reader.
+  Use the file name (if supplied) in any exception messages.
+  Only call this function with trusted data: This function 
+  uses clojure.tools.reader and can execute arbitrary code."
   ([s-or-reader] (string->environment s-or-reader nil))
   ([s-or-reader filename]
    (with-open [r (rt/indexing-push-back-reader s-or-reader)
@@ -18,6 +22,9 @@
 (def reader->environment string->environment)
 
 (defn file->environment
+  "Read a fern environment from the file speficied by path.
+  Only use this function to read trusted data: This function 
+  uses clojure.tools.reader and can execute arbitrary code."
   [path]
   (with-open [r (io/reader path)]
     (reader->environment r path)))
