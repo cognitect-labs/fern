@@ -17,24 +17,39 @@
 
 (declare do-evaluate)
 
+(defn- make-exinfo
+  ([x s history]
+   (make-exinfo x s history nil))
+  ([x s history cause]
+   (ex-info s (merge {:history history} (ex-data cause)) cause)))
+
 (defn- evaluate* [x cfg history]
   (when (> (count history) 100)
-    (throw
-      (ex-info
-        (str "Runaway recursion while evaluating [" x "].")
-        {:expression x :cfg cfg :history history})))
+    (throw (make-exinfo x (str "Runaway recursion while evaluating [" x "].") history )))
 
   (let [new-history (conj history x)]
     (do-evaluate x cfg new-history)))
 
+
 (defn- symbol-not-found
-  [x keys]
-  (str "Cannot find '" x "' in the configuration. Available keys are " (str/join ", " (sort keys))))
+  [x history keys]
+  (make-exinfo
+   x
+   (str "Cannot find '" x "' in the configuration. Available keys are " (str/join ", " (sort keys)))
+   history))
+
+(defn- error-while-evaluating
+  [x history cause]
+  (make-exinfo
+   x
+   (str "There was a problem while evaluating '" x "': " (.getMessage cause))
+   history
+   cause))
 
 (defn- assert-symbol-exists
   [symbol-table x history]
   (when-not (contains? symbol-table x)
-    (throw (ex-info (symbol-not-found x (keys symbol-table)) {:history history}))))
+    (throw (symbol-not-found x history (keys symbol-table)))))
 
 (defn- add-meta [x md]
   (if (and md (instance? clojure.lang.IObj x))
@@ -51,7 +66,6 @@
 
 (defn- evaluate-dispatch-f [x cfg history]
   (cond
-    (and (listy? x) (= (first x) 'lit)) :literal
     (and (listy? x) (= (first x) 'quote)) :quote
     (and (listy? x) (= (first x) 'clojure.core/deref)) :deref
     (listy? x) :list
@@ -92,22 +106,14 @@
 
 
 (defmethod do-evaluate :list [x cfg history]
-  (copy-meta x (apply list (map (eval-f cfg history) x))))
+  (try
+    (copy-meta x  (eval (map (eval-f cfg history) x)))
+    (catch Throwable t
+      (throw (error-while-evaluating x history t)))))
 
 (defmethod do-evaluate :quote [x cfg history]
   (second x))
 
-(defmethod do-evaluate :literal [x cfg history]
-  (copy-meta x
-             (try
-               (apply
-                literal
-                (second x)
-                (map (eval-f cfg history) (drop 2 x)))
-               (catch Exception ex
-                 (throw (ex-info (.getMessage ex)
-                                 (merge {:history history} (ex-data ex))
-                                 ex))))))
 
 (defmethod do-evaluate :deref [x cfg history]
   (deref-symbol (second x) cfg history))

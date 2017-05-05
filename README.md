@@ -37,7 +37,7 @@ Specifically the rules of Fern evaluation are:
 
 * Any value quoted in the ordinary Clojure way (either with an explicit `(clojure.core/quote some-expression)` or using a quote `'some-expression`) will evaluate to the inner expression. Thus, if you wanted to include a dereferenced symbol in your Fern data, you would write `'@foo`. If you wanted to included a quoted symbol in your Fern data you would simply double up on the quotes: `'(clojure.core/quote something-quoted)'`.
 
-* Any value of the form `(lit _symbol_ arg1 arg2...)` is replaced by the result of doing a *Clojure* evaluation of `(fern/literal _symbol_ arg1 arg2 arg3...)`.
+* Any value of the form `(func arg1 arg2 arg3...)` is replaced by the result of doing a *Clojure* evaluation of `(func arg1 arg2 arg3...)`.
 
 * Anything else just evaluates to itself. So `[1 foo :bar]` evaluates to a three element vector containing a number, a symbol and a keyword.
 
@@ -66,29 +66,28 @@ Once you have a fern environment, you can use `fern/evaluate` to pull values out
 
 ## Plugins
 
-Fern lets you add new methods for the `fern/literal`
-multifunction. You just define those in your namespaces in the
-[usual way](https://clojure.org/reference/multimethods). But there's a
-catch because you need to require those namespaces before calling
-`fern.easy/evaluate`.
-
-Fern provides a short cut for that. The function
-`fern.easy/load-environment` is just like
-`fern.easy/file->environment` but it takes a second argument. That
+Since Fern allows you to call functions with the familiar
+Clojure syntax of `(f arg1 arg2)`, it also supplies a short cut
+for loading in new namespaces _from the Fern file_.
+To use the shortcut, you use  `fern.easy/load-environment` in place of
+`fern.easy/file->environment`.
+The  `fern.easy/load-environment` is nearly identical to
+`fern.easy/file->environment`: The difference is that it takes a second argument. That
 will be a symbol in the Fern file whose value is a collection of
-namespaces to require.
-
-For example, if you have this file:
+namespaces to require. For a (slightly contrived) example:
 
 ~~~
-{plugins  [example.templates]
- host "localhost"
+{plugins  [clojure.string]
+ host-1 "server"
+ host-2 "example"
+ host-3 "com"
  timeout 4000
+
+ host     (clojure.string/join "." [host-1 host-2 host-3])
+
  server-1 {:host @host :request-timeout @timeout :port 8000}
  server-2 {:host @host :request-timeout @timeout :port 8010}
- server-3 {:host @host :request-timeout @timeout :port 8020}
-
- home     (lit example/template {:key "home.mustache"}) }
+ server-3 {:host @host :request-timeout @timeout :port 8020}}
 ~~~
 
 Then you can call fern like this:
@@ -99,11 +98,8 @@ Then you can call fern like this:
 (def e (fern.easy/load-environment "example.fern" 'plugins))
 ~~~
 
-The `(lit example/template ,,,)` expression is going to call the
-`fern/literal` multifunction with the arguments
-`['example/template {:key "home.mustache"}]`. Using the `plugins`
-symbol allows Fern to require a namespace ("example.templates") that
-defines the multimethod.
+And discover with `(fern/evaluate e 'host)` that your host is
+`"server.example.com"`.
 
 ## Reporting Errors
 

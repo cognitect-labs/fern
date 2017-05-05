@@ -40,7 +40,7 @@
 
 (deftest test-recursion-limit
   (is (thrown-with-msg? ExceptionInfo #"Runaway" (f/evaluate (f/environment '{foo @foo}) 'foo)))
-  (is (thrown-with-msg?  ExceptionInfo #"Runaway" 
+  (is (thrown-with-msg?  ExceptionInfo #"Runaway"
                         (f/evaluate (f/environment '{foo @bar bar @baz baz @foo}) 'foo))))
 
 
@@ -75,32 +75,36 @@
                         :file "test/sample.fern"
                         :line 6 :column 5 :end-line 6 :end-column 10})))
 
-(def fern-with-lits
-  "{fn :russ
-    ln :olsen
-    person (lit human @fn @ln)
-   }")
-
-(defmethod f/literal 'human
-  [_ fn ln]
-  (list fn ln))
-
 (defn string->environment
   [s]
   (f/environment (r/read (rt/indexing-push-back-reader s))))
 
-(deftest test-resolving-lit
-  (let [cfg (string->environment fern-with-lits)]
-    (is (= '(:russ :olsen) (f/evaluate cfg 'person)))))
+(def fern-with-expression
+  "{fn :russ
+    ln :olsen
+    person (str @fn @ln)
+   }")
 
-(deftest test-missing-literal
-  (is (thrown-with-msg? ExceptionInfo #"Undefined literal.*aaa"
-                        (f/evaluate (f/environment '{foo (lit aaa)}) 'foo))))
+(deftest test-eval-function
+  (let [cfg (string->environment fern-with-expression)]
+    (is (= ":russ:olsen" (f/evaluate cfg 'person)))))
+
+(defn- boom []
+  (/ 0 0))
+
+(deftest test-missing-symbol-in-list
+  (is (thrown-with-msg? ExceptionInfo #"There was a problem while evaluating"
+                        (f/evaluate (string->environment "{foo (baz 1)}") 'foo)))
+  (is (thrown-with-msg? ExceptionInfo #"There was a problem while evaluating"
+                        (f/evaluate (string->environment "{foo (foo.bar/baz 1)}") 'foo)))
+  (is (thrown-with-msg? ExceptionInfo #"There was a problem while evaluating"
+                        (f/evaluate (string->environment "{foo (fern-test/boom)}") 'foo))))
+
 (def diamond-reference
   "{A [@B @C]
     B @D
     C @D
-    D (lit human \"Russ\" \"Olsen\")}")
+    D (list \"Russ\" \"Olsen\")}")
 
 (deftest test-identical-objects
   (let [cfg               (string->environment diamond-reference)
