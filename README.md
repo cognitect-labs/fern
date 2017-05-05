@@ -1,5 +1,7 @@
 # fern
 
+[![CircleCI](https://circleci.com/gh/cognitect-labs/fern.svg?style=svg)](https://circleci.com/gh/cognitect-labs/fern)
+
 Fern is a simple but useful language for data. While you
 can use Fern to read any kind of trusted data, Fern has semantics
 that make it extremely useful for configuration data.
