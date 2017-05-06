@@ -4,12 +4,13 @@
             [clojure.pprint :refer [pprint]]
             [clojure.string :as str]
             [clojure.tools.reader :as reader]
-            [clojure.tools.reader.reader-types :as rt]))
+            [clojure.tools.reader.reader-types :as rt])
+  (:import (jline TerminalFactory)))
 
 (defn string->environment
   "Read a Fern environment from a string or a reader.
   Use the file name (if supplied) in any exception messages.
-  Only call this function with trusted data: This function 
+  Only call this function with trusted data: This function
   uses clojure.tools.reader and can execute arbitrary code."
   ([s-or-reader] (string->environment s-or-reader nil))
   ([s-or-reader filename]
@@ -23,7 +24,7 @@
 
 (defn file->environment
   "Read a fern environment from the file speficied by path.
-  Only use this function to read trusted data: This function 
+  Only use this function to read trusted data: This function
   uses clojure.tools.reader and can execute arbitrary code."
   [path]
   (with-open [r (io/reader path)]
@@ -68,6 +69,22 @@
             (str/join "\n"
              (map pprint-expr (reverse h))) #"(^|\n)" "\n\t")))
 
+(defn terminal-width [t]
+  (.getWidth t))
+
+(defn hline [t s]
+  (let [pad (- (terminal-width t) 6 (count s))]
+    (print (str  "--- " s " " (str/join (repeat pad "-")) \newline))))
+
+(defn abbreviate [t s]
+  (let [w (terminal-width t)]
+    (if (>= w (count s))
+      s
+      (str (subs s 0 (- w 5)) " ..."))))
+
 (defn print-evaluation-exception [e]
-  (println "Error in evaluation:" (.getMessage e))
-  (print-evaluation-history (:history (ex-data e))))
+  (let [t (TerminalFactory/get)]
+    (hline t " ERROR ")
+    (println)
+    (println (abbreviate t (.getMessage e)))
+    (print-evaluation-history (:history (ex-data e)))))
