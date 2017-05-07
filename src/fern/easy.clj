@@ -4,7 +4,9 @@
             [clojure.pprint :refer [pprint]]
             [clojure.string :as str]
             [clojure.tools.reader :as reader]
-            [clojure.tools.reader.reader-types :as rt])
+            [clojure.tools.reader.reader-types :as rt]
+            [fipp.visit :as fv]
+            [fern.printer :as printer])
   (:import (jline TerminalFactory)))
 
 (defn string->environment
@@ -58,16 +60,31 @@
  (doseq [k (keys env)]
    (f/evaluate env k)))
 
+(def underef-handlers
+  {clojure.lang.Cons
+   (fn cons-handler
+     [printer value]
+     (println 'here-cons)
+        (fv/visit-seq printer value))
+
+   clojure.lang.ISeq
+   (fn iseq-handler
+     [printer value]
+     (println 'here)
+     (fv/visit-seq printer value))})
 
 (defn- pprint-expr [e]
-  (with-out-str
-    (pprint e)))
+  (str
+   (printer/cprint-str e {:seq-limit 5 :print-handlers underef-handlers})
+   \newline
+   \newline))
 
 (defn print-evaluation-history [h]
   (print "\nI got here by evaluating these, from most recent to oldest:\n")
-  (println (str/replace
-            (str/join "\n"
-             (map pprint-expr (reverse h))) #"(^|\n)" "\n\t")))
+  (print
+   (str/replace
+    (str/join (map pprint-expr (reverse h)))
+    #"(^|\n)" "\n\t")))
 
 (defn terminal-width [t]
   (.getWidth t))
@@ -86,5 +103,8 @@
   (let [t (TerminalFactory/get)]
     (hline t " ERROR ")
     (println)
-    (println (abbreviate t (.getMessage e)))
+    (println (abbreviate t
+                         (or
+                           (:headline (ex-data e))
+                           (.getMessage e))))
     (print-evaluation-history (:history (ex-data e)))))

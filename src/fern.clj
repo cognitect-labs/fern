@@ -8,14 +8,14 @@
 (declare do-evaluate)
 
 (defn- make-exinfo
-  ([x s history]
-   (make-exinfo x s history nil))
-  ([x s history cause]
-   (ex-info s (merge {:history history} (ex-data cause)) cause)))
+  ([x headline s history]
+   (ex-info s {:headline headline :history history}))
+  ([x headline s history cause]
+   (ex-info (if cause (.getMessage cause) s) (merge {:history history :headline headline} (ex-data cause)) cause)))
 
 (defn- evaluate* [x cfg history]
   (when (> (count history) 100)
-    (throw (make-exinfo x (str "Runaway recursion while evaluating [" x "].") history )))
+    (throw (make-exinfo x "Runaway recursion" (str "Runaway recursion while evaluating [" x "].") history)))
 
   (let [new-history (conj history x)]
     (do-evaluate x cfg new-history)))
@@ -24,6 +24,7 @@
   [x history keys]
   (make-exinfo
    x
+   (str "Cannot find '" x "' in the configuration.")
    (str "Cannot find '" x "' in the configuration. Available keys are " (str/join ", " (sort keys)))
    history))
 
@@ -31,7 +32,8 @@
   [x history cause]
   (make-exinfo
    x
-   (str "There was a problem while evaluating '" x "': " (.getMessage cause))
+   "There was a problem during Clojure evaluation."
+   (str "There was a problem during Clojure evaluation:\n" x "\n" (.getMessage cause))
    history
    cause))
 
@@ -97,6 +99,8 @@
 (defmethod do-evaluate :list [x cfg history]
   (try
     (copy-meta x  (eval (map (eval-f cfg history) x)))
+    (catch clojure.lang.Compiler$CompilerException ce
+      (throw (error-while-evaluating x history (.getCause ce))))
     (catch Throwable t
       (throw (error-while-evaluating x history t)))))
 
