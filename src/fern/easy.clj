@@ -74,36 +74,47 @@
      (fv/visit-seq printer value))})
 
 (defn- pprint-expr [e]
-  (str
-   (printer/cprint-str e {:seq-limit 5 :print-handlers underef-handlers})
-   \newline
-   \newline))
+  (let [l  (some-> e meta :line)
+        l' (if l (format "%d\t" l) "\t")
+        v  (printer/cprint-str e {:seq-limit 5 :print-handlers underef-handlers})
+        v  (str/replace v #"\n" "\n\t")]
+    (str l' v \newline)))
 
 (defn print-evaluation-history [h]
-  (print "\nI got here by evaluating these, from most recent to oldest:\n")
+  (print "\nI got here by evaluating these, from most recent to oldest:\n\nLine\tValue\n")
   (print
-   (str/replace
-    (str/join (map pprint-expr (reverse h)))
-    #"(^|\n)" "\n\t")))
+   (str/join (map pprint-expr (reverse h)))))
 
 (defn terminal-width [t]
   (.getWidth t))
 
-(defn hline [t s]
-  (let [pad (- (terminal-width t) 6 (count s))]
-    (print (str  "--- " s " " (str/join (repeat pad "-")) \newline))))
+(defn hline
+  ([t s]
+   (let [pad (- (terminal-width t) 4 (count s))]
+     (print (str  "---" s  (str/join (repeat pad "-")) \newline))))
+  ([t l r]
+   (let [pad (- (terminal-width t) 6 (count l) (count r))]
+     (print (str  "---" l (str/join (repeat pad "-")) " " r \newline)))))
 
-(defn abbreviate [t s]
-  (let [w (terminal-width t)]
-    (if (>= w (count s))
-      s
-      (str (subs s 0 (- w 5)) " ..."))))
+(defn abbreviate-left
+  [w s]
+  (if (>= w (count s))
+    s
+    (str " ..." (subs s (- (count s) w -4) (count s)))))
+
+(defn abbreviate
+  [w s]
+  (if (>= w (count s))
+    s
+    (str (subs s 0 (- w 5)) " ...")))
 
 (defn print-evaluation-exception [e]
   (let [t (TerminalFactory/get)]
-    (hline t " ERROR ")
+    (if-let [file (some-> e ex-data :history last meta :file)]
+      (hline t " ERROR " (abbreviate-left 35 file))
+      (hline t " ERROR "))
     (println)
-    (println (abbreviate t
+    (println (abbreviate (terminal-width t)
                          (or
                            (:headline (ex-data e))
                            (.getMessage e))))

@@ -89,15 +89,15 @@
   (let [cfg (string->environment fern-with-expression)]
     (is (= ":russ:olsen" (f/evaluate cfg 'person)))))
 
-(defn- boom []
+(defn boom []
   (/ 0 0))
 
 (deftest test-missing-symbol-in-list
-  (is (thrown-with-msg? ExceptionInfo #"There was a problem while evaluating"
+  (is (thrown-with-msg? ExceptionInfo #"Unable to resolve symbol"
                         (f/evaluate (string->environment "{foo (baz 1)}") 'foo)))
-  (is (thrown-with-msg? ExceptionInfo #"There was a problem while evaluating"
+  (is (thrown-with-msg? ExceptionInfo #"foo.bar"
                         (f/evaluate (string->environment "{foo (foo.bar/baz 1)}") 'foo)))
-  (is (thrown-with-msg? ExceptionInfo #"There was a problem while evaluating"
+  (is (thrown-with-msg? ExceptionInfo #"Divide by zero"
                         (f/evaluate (string->environment "{foo (fern-test/boom)}") 'foo))))
 
 (def diamond-reference
@@ -114,5 +114,4 @@
 (deftest test-reflective-configurations
   (let [cfg (fe/load-environment "test/self-referential.fern")]
     (is (= 24 (f/evaluate cfg 'foo)))
-    (is (= cfg (f/evaluate cfg 'baz)))
-    ))
+    (is (= cfg (f/evaluate cfg 'baz)))))
