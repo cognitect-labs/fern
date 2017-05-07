@@ -65,6 +65,7 @@
     (number? x) :identity
     (string? x) :identity
     (vector? x) :vector
+    (set? x)    :set
     (record? x) (class x)
     (map? x) :map
     :default (class x)))
@@ -90,15 +91,18 @@
   (copy-meta x
              (mapv (eval-f cfg history) x)))
 
+(defmethod do-evaluate :set [x cfg history]
+  (copy-meta x
+             (into #{} (map (eval-f cfg history) x))))
+
 (defmethod do-evaluate :map [x cfg history]
   (copy-meta x
              (zipmap (map (eval-f cfg history) (keys x))
                      (map (eval-f cfg history) (vals x)))))
 
-
 (defmethod do-evaluate :list [x cfg history]
   (try
-    (copy-meta x  (eval (map (eval-f cfg history) x)))
+    (copy-meta x (eval (map (eval-f cfg history) x)))
     (catch clojure.lang.Compiler$CompilerException ce
       (throw (error-while-evaluating x history (.getCause ce))))
     (catch Throwable t

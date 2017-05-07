@@ -52,7 +52,7 @@
     '{foo '(clojure.core/deref bar)}        '(clojure.core/deref bar)
     '{foo (quote (clojure.core/deref bar))} '(clojure.core/deref bar)))
 
-(def sample (fe/file->environment "test/sample.fern"))
+(def sample (fe/file->environment "../fern/test/sample.fern"))
 
 ;; TBD Where is our file name???
 
@@ -82,8 +82,7 @@
 (def fern-with-expression
   "{fn :russ
     ln :olsen
-    person (str @fn @ln)
-   }")
+    person (str @fn @ln)}")
 
 (deftest test-eval-function
   (let [cfg (string->environment fern-with-expression)]
@@ -115,3 +114,26 @@
   (let [cfg (fe/load-environment "test/self-referential.fern")]
     (is (= 24 (f/evaluate cfg 'foo)))
     (is (= cfg (f/evaluate cfg 'baz)))))
+
+(defrecord ARecord [fname lname])
+
+(defprotocol AProtocol
+  (the-val [this]))
+
+(defn prot [v]
+  (reify AProtocol
+    (the-val [this]
+      v)
+    (equals [this that]
+      (= v (the-val that)))))
+
+(deftest test-round-trips
+  (are [expected env] (= expected (f/evaluate (string->environment env) 'rec))
+    #{:a :b :c}                "{rec #{@a @b @c} a :a b :b c :c}"
+    (->ARecord "Russ" "Olsen") "{rec (->ARecord \"Russ\" \"Olsen\")}"
+    (->ARecord "Russ" "Olsen") "{rec @ref ref (->ARecord \"Russ\" \"Olsen\")}"
+    (->ARecord "Russ" "Olsen") "{rec @ref1 ref1 @ref2 ref2 (->ARecord \"Russ\" \"Olsen\")}"
+    (prot 5)                   "{rec (prot 5)}"
+    (prot 5)                   "{rec @ref ref (prot 5)}"
+    {:a (prot 5)}              "{rec @ref1 ref1 {:a (prot @v1/ref2)} v1/ref2 5}"
+    (prot {:a 5})              "{rec @ref1 ref1 (prot {:a @v1/ref2}) v1/ref2 5}"))
