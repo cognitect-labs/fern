@@ -59,20 +59,20 @@
 (deftest test-metadata
   (testing "value for symbol"
     (are [sym md] (= md (meta (f/evaluate sample sym)))
-         'fullname {:file "test/sample.fern"
+         'fullname {:file "../fern/test/sample.fern"
                     :source "[@fn @ln]"
                     :line 3 :column 11 :end-line 3 :end-column 20}
          'revname  {:source "[\n    [@ln]\n    [@fn]\n  ]"
-                    :file "test/sample.fern"
+                    :file "../fern/test/sample.fern"
                     :line 5 :column 3 :end-line 8 :end-column 4}
          'nameref {:source "[\n    [@ln]\n    [@fn]\n  ]"
-                   :file "test/sample.fern"
+                   :file "../fern/test/sample.fern"
                    :line 5 :column 3 :end-line 8 :end-column 4}))
 
   (testing "components of value for symbol"
     (are [sym extr md] (= md (meta (get-in (f/evaluate sample sym) extr)))
          'revname  [0] {:source "[@ln]"
-                        :file "test/sample.fern"
+                        :file "../fern/test/sample.fern"
                         :line 6 :column 5 :end-line 6 :end-column 10})))
 
 (defn string->environment
@@ -130,10 +130,10 @@
 (deftest test-round-trips
   (are [expected env] (= expected (f/evaluate (string->environment env) 'rec))
     #{:a :b :c}                "{rec #{@a @b @c} a :a b :b c :c}"
-    (->ARecord "Russ" "Olsen") "{rec (->ARecord \"Russ\" \"Olsen\")}"
-    (->ARecord "Russ" "Olsen") "{rec @ref ref (->ARecord \"Russ\" \"Olsen\")}"
-    (->ARecord "Russ" "Olsen") "{rec @ref1 ref1 @ref2 ref2 (->ARecord \"Russ\" \"Olsen\")}"
-    (prot 5)                   "{rec (prot 5)}"
-    (prot 5)                   "{rec @ref ref (prot 5)}"
-    {:a (prot 5)}              "{rec @ref1 ref1 {:a (prot @v1/ref2)} v1/ref2 5}"
-    (prot {:a 5})              "{rec @ref1 ref1 (prot {:a @v1/ref2}) v1/ref2 5}"))
+    (->ARecord "Russ" "Olsen") "{rec (fern-test/->ARecord \"Russ\" \"Olsen\")}"
+    (->ARecord "Russ" "Olsen") "{rec @ref ref (fern-test/->ARecord \"Russ\" \"Olsen\")}"
+    (->ARecord "Russ" "Olsen") "{rec @ref1 ref1 @ref2 ref2 (fern-test/->ARecord \"Russ\" \"Olsen\")}"
+    (prot 5)                   "{rec (fern-test/prot 5)}"
+    (prot 5)                   "{rec @ref ref (fern-test/prot 5)}"
+    {:a (prot 5)}              "{rec @ref1 ref1 {:a (fern-test/prot @v1/ref2)} v1/ref2 5}"
+    (prot {:a 5})              "{rec @ref1 ref1 (fern-test/prot {:a @v1/ref2}) v1/ref2 5}"))
