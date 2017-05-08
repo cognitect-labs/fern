@@ -127,7 +127,7 @@
     (equals [this that]
       (= v (the-val that)))))
 
-(deftest test-round-trips
+(deftest test-protocol-and-record-realization
   (are [expected env] (= expected (f/evaluate (string->environment env) 'rec))
     #{:a :b :c}                "{rec #{@a @b @c} a :a b :b c :c}"
     (->ARecord "Russ" "Olsen") "{rec (fern-test/->ARecord \"Russ\" \"Olsen\")}"
