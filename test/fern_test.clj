@@ -46,11 +46,11 @@
 
 (deftest test-fern-quote
   (are [cfg expected] (= expected (f/evaluate (f/environment cfg) 'foo))
-    '{foo (quote bar)}                      'bar
-    '{foo (quote 'bar)}                     '(quote bar)
-    '{foo (quote (quote bar))}              '(quote bar)
-    '{foo '(clojure.core/deref bar)}        '(clojure.core/deref bar)
-    '{foo (quote (clojure.core/deref bar))} '(clojure.core/deref bar)))
+    '{foo (fern/quote bar)}                      'bar
+    '{foo (fern/quote 'bar)}                     '(quote bar)
+    '{foo (fern/quote (quote bar))}              '(quote bar)
+    '{foo (fern/quote (clojure.core/deref bar))} '(clojure.core/deref bar)
+    '{foo (fern/quote (clojure.core/deref bar))} '(clojure.core/deref bar)))
 
 (def sample (fe/file->environment "../fern/test/sample.fern"))
 
@@ -79,25 +79,22 @@
   [s]
   (f/environment (r/read (rt/indexing-push-back-reader s))))
 
+(defmethod fern/literal 'concat
+  [_ a b]
+  (str a b))
+
 (def fern-with-expression
   "{fn :russ
     ln :olsen
-    person (str @fn @ln)}")
+    person (fern/lit concat @fn @ln)}")
 
 (deftest test-eval-function
   (let [cfg (string->environment fern-with-expression)]
     (is (= ":russ:olsen" (f/evaluate cfg 'person)))))
 
-(defn boom []
-  (/ 0 0))
-
-(deftest test-missing-symbol-in-list
-  (is (thrown-with-msg? ExceptionInfo #"Unable to resolve symbol"
-                        (f/evaluate (string->environment "{foo (baz 1)}") 'foo)))
-  (is (thrown-with-msg? ExceptionInfo #"foo.bar"
-                        (f/evaluate (string->environment "{foo (foo.bar/baz 1)}") 'foo)))
-  (is (thrown-with-msg? ExceptionInfo #"Divide by zero"
-                        (f/evaluate (string->environment "{foo (fern-test/boom)}") 'foo))))
+(deftest test-missing-literal
+  (is (thrown-with-msg? ExceptionInfo #"nononon"
+                        (f/evaluate (string->environment "{foo (fern/lit nononon)}") 'foo))))
 
 (def diamond-reference
   "{A [@B @C]
@@ -114,26 +111,3 @@
   (let [cfg (fe/load-environment "test/self-referential.fern")]
     (is (= 24 (f/evaluate cfg 'foo)))
     (is (= cfg (f/evaluate cfg 'baz)))))
-
-(defrecord ARecord [fname lname])
-
-(defprotocol AProtocol
-  (the-val [this]))
-
-(defn prot [v]
-  (reify AProtocol
-    (the-val [this]
-      v)
-    (equals [this that]
-      (= v (the-val that)))))
-
-(deftest test-protocol-and-record-realization
-  (are [expected env] (= expected (f/evaluate (string->environment env) 'rec))
-    #{:a :b :c}                "{rec #{@a @b @c} a :a b :b c :c}"
-    (->ARecord "Russ" "Olsen") "{rec (fern-test/->ARecord \"Russ\" \"Olsen\")}"
-    (->ARecord "Russ" "Olsen") "{rec @ref ref (fern-test/->ARecord \"Russ\" \"Olsen\")}"
-    (->ARecord "Russ" "Olsen") "{rec @ref1 ref1 @ref2 ref2 (fern-test/->ARecord \"Russ\" \"Olsen\")}"
-    (prot 5)                   "{rec (fern-test/prot 5)}"
-    (prot 5)                   "{rec @ref ref (fern-test/prot 5)}"
-    {:a (prot 5)}              "{rec @ref1 ref1 {:a (fern-test/prot @v1/ref2)} v1/ref2 5}"
-    (prot {:a 5})              "{rec @ref1 ref1 (fern-test/prot {:a @v1/ref2}) v1/ref2 5}"))

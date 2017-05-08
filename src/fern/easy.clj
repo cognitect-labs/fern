@@ -111,14 +111,16 @@
     s
     (str (subs s 0 (- w 5)) " ...")))
 
+(defn print-in-width [w s]
+  (when s
+    (println (abbreviate w s))))
+
 (defn print-evaluation-exception [e]
   (let [t    (TerminalFactory/get)
         w    (terminal-width t)
         file (some-> e ex-data :history last meta :file)]
     (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
     (println)
-    (println (abbreviate w
-                         (or
-                           (:headline (ex-data e))
-                           (.getMessage e))))
+    (print-in-width w (:headline (ex-data e)))
+    (print-in-width w (.getMessage e))
     (print-evaluation-history (:history (ex-data e)))))

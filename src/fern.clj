@@ -37,10 +37,21 @@
    history
    cause))
 
+(defn- unmatched-literal
+  [x history cause]
+  (make-exinfo
+   x
+   "You used a literal that isn't defined. You may need to `require` a namespace."
+   (str "You used a literal that isn't defined. You may need to `require` a namespace." x "\n" (.getMessage cause))
+   history
+   cause))
+
 (defn- assert-symbol-exists
   [symbol-table x history]
   (when-not (contains? symbol-table x)
     (throw (symbol-not-found x history (keys symbol-table)))))
+
+(defmulti literal (fn [kind & args] kind))
 
 (defn- add-meta [x md]
   (if (and md (instance? clojure.lang.IObj x))
@@ -57,18 +68,19 @@
 
 (defn- evaluate-dispatch-f [x cfg history]
   (cond
-    (and (listy? x) (= (first x) 'quote)) :quote
+    (and (listy? x) (= (first x) 'fern/quote)) :quote
     (and (listy? x) (= (first x) 'clojure.core/deref)) :deref
-    (listy? x) :list
-    (symbol? x) :identity
+    (and (listy? x) (= (first x) 'fern/lit)) :literal
+    (listy? x)   :list
+    (symbol? x)  :identity
     (keyword? x) :identity
-    (number? x) :identity
-    (string? x) :identity
-    (vector? x) :vector
-    (set? x)    :set
-    (record? x) (class x)
-    (map? x) :map
-    :default (class x)))
+    (number? x)  :identity
+    (string? x)  :identity
+    (vector? x)  :vector
+    (set? x)     :set
+    (record? x)  (class x)
+    (map? x)     :map
+    :default     (class x)))
 
 (defmulti ^:private do-evaluate evaluate-dispatch-f)
 
@@ -101,10 +113,16 @@
                      (map (eval-f cfg history) (vals x)))))
 
 (defmethod do-evaluate :list [x cfg history]
+  (copy-meta x
+             (map (eval-f cfg history) x)))
+
+(defmethod do-evaluate :literal [x cfg history]
   (try
-    (copy-meta x (eval (map (eval-f cfg history) x)))
-    (catch clojure.lang.Compiler$CompilerException ce
-      (throw (error-while-evaluating x history (.getCause ce))))
+    (let [target (second x)]
+      (copy-meta x
+                 (apply literal target (map (eval-f cfg history) (drop 2 x)))))
+    (catch IllegalArgumentException iae
+      (throw (unmatched-literal x history iae)))
     (catch Throwable t
       (throw (error-while-evaluating x history t)))))
 
