@@ -6,7 +6,8 @@
             [clojure.tools.reader :as reader]
             [clojure.tools.reader.reader-types :as rt]
             [fipp.visit :as fv]
-            [fern.printer :as printer])
+            [fern.printer :as printer]
+            [puget.color.ansi :as ansi])
   (:import (jline TerminalFactory)))
 
 (defn string->environment
@@ -89,12 +90,14 @@
   (.getWidth t))
 
 (defn hline
-  ([t s]
-   (let [pad (- (terminal-width t) 4 (count s))]
-     (print (str  "---" s  (str/join (repeat pad "-")) \newline))))
-  ([t l r]
-   (let [pad (- (terminal-width t) 6 (count l) (count r))]
-     (print (str  "---" l (str/join (repeat pad "-")) " " r \newline)))))
+  ([w s]
+   (let [pad (- w 4 (count s))]
+     (str  "---" s  (str/join (repeat pad "-")) \newline)))
+  ([w l r]
+   (if (empty? r)
+     (hline w l)
+     (let [pad (- w 6 (count l) (count r))]
+       (str  "---" l (str/join (repeat pad "-")) " " r \newline)))))
 
 (defn abbreviate-left
   [w s]
@@ -109,12 +112,12 @@
     (str (subs s 0 (- w 5)) " ...")))
 
 (defn print-evaluation-exception [e]
-  (let [t (TerminalFactory/get)]
-    (if-let [file (some-> e ex-data :history last meta :file)]
-      (hline t " ERROR " (abbreviate-left 35 file))
-      (hline t " ERROR "))
+  (let [t    (TerminalFactory/get)
+        w    (terminal-width t)
+        file (some-> e ex-data :history last meta :file)]
+    (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
     (println)
-    (println (abbreviate (terminal-width t)
+    (println (abbreviate w
                          (or
                            (:headline (ex-data e))
                            (.getMessage e))))
