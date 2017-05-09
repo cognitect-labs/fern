@@ -118,9 +118,21 @@
 (defn print-evaluation-exception [e]
   (let [t    (TerminalFactory/get)
         w    (terminal-width t)
-        file (some-> e ex-data :history last meta :file)]
+        h    (some-> e ex-data :history)
+        file (some-> h last meta :file)]
     (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
     (println)
     (print-in-width w (:headline (ex-data e)))
     (print-in-width w (.getMessage e))
-    (print-evaluation-history (:history (ex-data e)))))
+    (when h
+      (print-evaluation-history h))))
+
+(defn print-other-exception
+  ([e]
+   (print-other-exception e nil))
+  ([e file]
+   (let [t    (TerminalFactory/get)
+         w    (terminal-width t)]
+     (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
+     (println)
+     (println (.getMessage e)))))
