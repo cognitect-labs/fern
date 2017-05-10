@@ -76,13 +76,15 @@
 
 (defn- pprint-expr [e]
   (let [l  (some-> e meta :line)
-        l' (if l (format "%d\t" l) "\t")
+        l' (if l (format "%d:\t" l) "\t")
         v  (printer/cprint-str e {:seq-limit 5 :print-handlers underef-handlers})
         v  (str/replace v #"\n" "\n\t")]
     (str l' v \newline)))
 
-(defn print-evaluation-history [h]
-  (print "\nI got here by evaluating these, from most recent to oldest:\n\nLine\tValue\n")
+(defn print-evaluation-history [file h]
+  (print "\nI got here by evaluating these, from most recent to oldest:\n\n")
+  (when file
+    (println (ansi/sgr file :red)))
   (print
    (str/join (map pprint-expr (reverse h)))))
 
@@ -125,7 +127,7 @@
     (print-in-width w (:headline (ex-data e)))
     (print-in-width w (.getMessage e))
     (when h
-      (print-evaluation-history h))))
+      (print-evaluation-history file h))))
 
 (defn print-other-exception
   ([e]
