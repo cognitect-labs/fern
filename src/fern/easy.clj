@@ -76,13 +76,15 @@
 
 (defn- pprint-expr [e]
   (let [l  (some-> e meta :line)
-        l' (if l (format "%d\t" l) "\t")
+        l' (if l (format "%d:\t" l) "\t")
         v  (printer/cprint-str e {:seq-limit 5 :print-handlers underef-handlers})
         v  (str/replace v #"\n" "\n\t")]
     (str l' v \newline)))
 
-(defn print-evaluation-history [h]
-  (print "\nI got here by evaluating these, from most recent to oldest:\n\nLine\tValue\n")
+(defn print-evaluation-history [file h]
+  (print "\nI got here by evaluating these, from most recent to oldest:\n\n")
+  (when file
+    (println (ansi/sgr file :red)))
   (print
    (str/join (map pprint-expr (reverse h)))))
 
@@ -118,9 +120,21 @@
 (defn print-evaluation-exception [e]
   (let [t    (TerminalFactory/get)
         w    (terminal-width t)
-        file (some-> e ex-data :history last meta :file)]
+        h    (some-> e ex-data :history)
+        file (some-> h last meta :file)]
     (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
     (println)
     (print-in-width w (:headline (ex-data e)))
     (print-in-width w (.getMessage e))
-    (print-evaluation-history (:history (ex-data e)))))
+    (when h
+      (print-evaluation-history file h))))
+
+(defn print-other-exception
+  ([e]
+   (print-other-exception e nil))
+  ([e file]
+   (let [t    (TerminalFactory/get)
+         w    (terminal-width t)]
+     (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
+     (println)
+     (println (.getMessage e)))))
