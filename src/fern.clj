@@ -71,6 +71,7 @@
     (and (listy? x) (= (first x) 'fern/quote)) :quote
     (and (listy? x) (= (first x) 'clojure.core/deref)) :deref
     (and (listy? x) (= (first x) 'fern/lit)) :literal
+    (and (listy? x) (= (first x) 'fern/fern)) :fern
     (listy? x)   :list
     (symbol? x)  :identity
     (keyword? x) :identity
@@ -86,18 +87,17 @@
 
 (defmethod do-evaluate :identity [x _ _] x)
 
+(defmethod do-evaluate :fern [_ cfg _] cfg)
+
 (defn- deref-symbol [x cfg history]
   {:pre [(symbol? x)]}
-  (if (= '*fern* x)
-    cfg
-    (do
-      (assert-symbol-exists cfg x history)
-      (let [cache  (.-cache cfg)
-            result (if (contains? @cache x)
-                     (get @cache x)
-                     (evaluate* (get cfg x) cfg history))]
-        (swap! cache assoc x result)
-        result))))
+  (assert-symbol-exists cfg x history)
+  (let [cache  (.-cache cfg)
+        result (if (contains? @cache x)
+                 (get @cache x)
+                 (evaluate* (get cfg x) cfg history))]
+    (swap! cache assoc x result)
+    result))
 
 (defmethod do-evaluate :vector [x cfg history]
   (copy-meta x
