@@ -22,7 +22,7 @@ The thing that makes Fern Fern is that it provides a way
 for one part of a Fern file to reference another. The
 syntax for recursively evaluating a symbol in Fern is
 identical to the Clojure dereference syntax. For example,
-let's imagine that what you really need is to configure
+let's imagine that you need to configure
 three servers. Each server listens on a different port, but
 all happen to be on the same host and use the timeout value.
 In this case, the Fern configuration might look like:
@@ -35,21 +35,30 @@ In this case, the Fern configuration might look like:
  server-3 {:host @host :request-timeout @timeout :port 8020}}
 ~~~
 
+Note how the `:host` values are all set to `@host` which is a reference
+to `host` which ultimately resolves to `"localhost"`.
+
 Specifically the rules of Fern evaluation are:
 
 * Any dereferenced symbol, either `(clojure.core/deref a-symbol)` or `@a-symbol` is recursively evaluated by Fern.
 
-* Any value quoted in the ordinary Clojure way (either with an explicit `(clojure.core/quote some-expression)` or using a quote `'some-expression`) will evaluate to the inner expression. Thus, if you wanted to include a dereferenced symbol in your Fern data, you would write `'@foo`. If you wanted to included a quoted symbol in your Fern data you would simply double up on the quotes: `'(clojure.core/quote something-quoted)'`.
+* Any value of the form `(fern/lit _keyword_ arg1 arg2 arg3...)` is replaced by the result of doing calling `(fern/literal _keyword_ arg1 arg2 arg3...)`. This provides a mechanism where you can add custom processing to your Fern files by defining a method for `fern/literal` and then using it inside of your Fern file.
 
-* Any value of the form `(func arg1 arg2 arg3...)` is replaced by the result of doing a *Clojure* evaluation of `(func arg1 arg2 arg3...)`.
+* Any value of the form `(fern/fern)` is replaced by entire Fern configuration.
 
-* Anything else just evaluates to itself. So `[1 foo :bar]` evaluates to a three element vector containing a number, a symbol and a keyword.
+* Any value quoted with `fern/quote`  will be returned unprocessed
+by Fern. Thus `(fern/quote a-value)` is just a long winded way of saying
+`a-value`. Use `fern/quote` in those rare instances where you need to
+prevent Fern evaluation. For example you can say `(fern/quote (clojure.core/deref foo))` to get the value `(clojure.core/deref foo)`
+without having Fern try to resolve `foo`.
+
+* Anything else just evaluates to itself. So `[1 foo :bar]` evaluates to a three element vector containing a number, a symbol and a keyword while `(+ 1 77)` evaluates to a three element list whose first element is the symbol `+`.
 
 ## API
 
 Fern provides two levels of API. The core Fern API is defined in the
-`fern` namespace, while the in the `fern.easy` namespace you will
-find a number of convenience functions that make reading a Fern file
+`fern` namespace, while the in the `fern.easy` namespace provides
+a number of convenience functions that make reading Fern files
 relatively painless. For example, `fern.easy/file->environment`
 takes a path and reads the fern file at that path and returns the Fern
 environment:
@@ -70,24 +79,35 @@ Once you have a fern environment, you can use `fern/evaluate` to pull values out
 
 ## Plugins
 
-Since Fern allows you to call functions with the familiar
-Clojure syntax of `(f arg1 arg2)`, it also supplies a short cut
+Since Fern allows you to add custom processing by defining additional
+methods on the `fern/literal` multimethod, it also supplies a short cut
 for loading in new namespaces _from the Fern file_.
 To use the shortcut, you use  `fern.easy/load-environment` in place of
 `fern.easy/file->environment`.
 The  `fern.easy/load-environment` is nearly identical to
-`fern.easy/file->environment`: The difference is that it takes a second argument. That
-will be a symbol in the Fern file whose value is a collection of
-namespaces to require. For a (slightly contrived) example:
+`fern.easy/file->environment`: The difference is that it takes a second argument. That second argument should
+be a symbol in the Fern file whose value is a collection of
+namespaces to require. For a (slightly contrived) example, imagine
+we had a Clojure namespace called `server-name`:
 
 ~~~
-{plugins  [clojure.string]
+(ns server
+  (:require [fern :as f]))
+
+(defmethod f/literal :server-name [_ n1 n2]
+  (str n1 "." n2 ".com"))
+~~~
+
+Using the plugins facility we can pull in that namespace and then
+use the :server-name literal in our file.
+
+~~~
+{plugins  [server-name]
  host-1 "server"
  host-2 "example"
- host-3 "com"
  timeout 4000
 
- host     (clojure.string/join "." [host-1 host-2 host-3])
+ host     (fern/lit :server-name host-1 host-2)
 
  server-1 {:host @host :request-timeout @timeout :port 8000}
  server-2 {:host @host :request-timeout @timeout :port 8010}
