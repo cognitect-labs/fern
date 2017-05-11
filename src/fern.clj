@@ -138,7 +138,7 @@
   Evaluable
   (evaluate [this x]
     (assert-symbol-exists symbol-table x [])
-    (evaluate* (get symbol-table x) this [(list `deref x)]))
+    (deref-symbol x this []))
 
   clojure.lang.Associative
   (containsKey [this k]
