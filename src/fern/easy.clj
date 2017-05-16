@@ -115,7 +115,8 @@
 
 (defn print-in-width [w s]
   (when s
-    (println (abbreviate w s))))
+    (doseq [line (str/split s #"\n")]
+      (println (abbreviate w line)))))
 
 (defn print-evaluation-exception [e]
   (let [t    (TerminalFactory/get)
