@@ -135,7 +135,19 @@
    (print-other-exception e nil))
   ([e file]
    (let [t    (TerminalFactory/get)
+         w    (terminal-width t)
+         msg  (.getMessage e)
+         msg  (if (empty? msg) (.getName (.getClass e)) msg)]
+     (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
+     (println)
+     (println msg))))
+
+(defn print-error-message
+  ([headline]
+   (print-error-message headline nil))
+  ([headline file]
+   (let [t    (TerminalFactory/get)
          w    (terminal-width t)]
      (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
      (println)
-     (println (.getMessage e)))))
+     (println headline))))
