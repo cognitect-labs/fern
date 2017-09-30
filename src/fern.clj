@@ -25,7 +25,7 @@
   (make-exinfo
    x
    (str "Cannot find '" x "' in the configuration.")
-   (str "Cannot find '" x "' in the configuration. Available keys are " (str/join ", " (sort keys)))
+   (str "Available keys are " (str/join ", " (sort keys)))
    history))
 
 (defn- error-while-evaluating
@@ -41,8 +41,8 @@
   [x history cause]
   (make-exinfo
    x
-   "You used a literal that isn't defined. You may need to `require` a namespace."
-   (str "You used a literal that isn't defined. You may need to `require` a namespace." x "\n" (.getMessage cause))
+   "You used a literal that isn't defined."
+   (str "You may need to `require` a namespace." x "\n" (.getMessage cause))
    history
    cause))
 

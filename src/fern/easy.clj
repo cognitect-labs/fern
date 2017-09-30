@@ -118,17 +118,20 @@
     (doseq [line (str/split s #"\n")]
       (println (abbreviate w line)))))
 
-(defn print-evaluation-exception [e]
-  (let [t    (TerminalFactory/get)
-        w    (terminal-width t)
-        h    (some-> e ex-data :history)
-        file (some-> h last meta :file)]
-    (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
-    (println)
-    (print-in-width w (:headline (ex-data e)))
-    (print-in-width w (.getMessage e))
-    (when h
-      (print-evaluation-history file h))))
+(defn print-evaluation-exception
+  ([e]
+   (print-evaluation-exception e nil))
+  ([e filename]
+   (let [t    (TerminalFactory/get)
+         w    (terminal-width t)
+         h    (some-> e ex-data :history)
+         file (or (some-> h last meta :file) filename)]
+     (println (ansi/sgr (hline w " ERROR " (abbreviate-left 35 file)) :red))
+     (println)
+     (print-in-width w (:headline (ex-data e)))
+     (print-in-width w (.getMessage e))
+     (when h
+       (print-evaluation-history file h)))))
 
 (defn print-other-exception
   ([e]
