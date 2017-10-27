@@ -65,13 +65,11 @@
   {clojure.lang.Cons
    (fn cons-handler
      [printer value]
-     (println 'here-cons)
-        (fv/visit-seq printer value))
+     (fv/visit-seq printer value))
 
    clojure.lang.ISeq
    (fn iseq-handler
      [printer value]
-     (println 'here)
      (fv/visit-seq printer value))})
 
 (defn- pprint-expr [e]
