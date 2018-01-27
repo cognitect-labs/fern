@@ -57,7 +57,7 @@ without having Fern try to resolve `foo`.
 ## API
 
 Fern provides two levels of API. The core Fern API is defined in the
-`fern` namespace, while the in the `fern.easy` namespace provides
+`fern` namespace, while the `fern.easy` namespace provides
 a number of convenience functions that make reading Fern files
 relatively painless. For example, `fern.easy/file->environment`
 takes a path and reads the fern file at that path and returns the Fern
@@ -74,7 +74,7 @@ Once you have a fern environment, you can use `fern/evaluate` to pull values out
 ~~~
 (require 'fern)
 
-(def server-1-map (fern/evaluate 'server-1)
+(def server-1-map (fern/evaluate e 'server-1)
 ~~~
 
 ## Plugins
@@ -91,7 +91,7 @@ namespaces to require. For a (slightly contrived) example, imagine
 we had a Clojure namespace called `server-name`:
 
 ~~~
-(ns server
+(ns server-name
   (:require [fern :as f]))
 
 (defmethod f/literal :server-name [_ n1 n2]
