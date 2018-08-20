@@ -31,7 +31,7 @@
   uses clojure.tools.reader and can execute arbitrary code."
   [path]
   (with-open [r (io/reader path)]
-    (reader->environment r path)))
+    (reader->environment r (str path))))
 
 (defn load-plugin! [pi]
   (try
