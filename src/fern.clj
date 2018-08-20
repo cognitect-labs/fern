@@ -40,9 +40,14 @@
 (defn- unmatched-literal
   [x history cause]
   (make-exinfo
-   x
-   "You used a literal that isn't defined."
-   (str "You may need to `require` a namespace." x "\n" (.getMessage cause))
+    x
+    (cond
+      (str/starts-with? (.getMessage cause) "Wrong number of args")
+      "You called a literal with the wrong number of arguments."
+
+      :else
+      "It looks like you used a literal that isn't defined.")
+    (str "You may need to `require` a namespace." x "\n" (.getMessage cause))
    history
    cause))
 
