@@ -4,7 +4,7 @@
   :license      {:name "Eclipse Public License"
                  :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0" :scope "provided"]
-                 [org.clojure/tools.reader "1.0.0-beta4"]
+                 [org.clojure/tools.reader "1.3.0"]
                  [fipp "0.6.12" :exclusions [org.clojure/core.rrb-vector]]
                  ;; Workaround for
                  ;; https://dev.clojure.org/jira/browse/CRRBV-18 until
