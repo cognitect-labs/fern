@@ -3,7 +3,7 @@
   :url          "https://github.com/cognitect-labs/fern"
   :license      {:name "Eclipse Public License"
                  :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-alpha15" :scope "provided"]
+  :dependencies [[org.clojure/clojure "1.9.0" :scope "provided"]
                  [org.clojure/tools.reader "1.0.0-beta4"]
                  [fipp "0.6.12" :exclusions [org.clojure/core.rrb-vector]]
                  ;; Workaround for
