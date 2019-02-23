@@ -111,3 +111,7 @@
   (let [cfg (fe/load-environment "test/self-referential.fern")]
     (is (= 24 (f/evaluate cfg 'foo)))
     (is (= cfg (f/evaluate cfg 'baz)))))
+
+(deftest test-evaluation-in-env
+  (let [cfg (string->environment "{A (fern/eval (= @B @C)) B true C 1}")]
+    (is (= false (f/evaluate cfg 'A)))))

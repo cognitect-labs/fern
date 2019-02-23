@@ -76,6 +76,7 @@
     (and (listy? x) (= (first x) 'fern/quote)) :quote
     (and (listy? x) (= (first x) 'clojure.core/deref)) :deref
     (and (listy? x) (= (first x) 'fern/lit)) :literal
+    (and (listy? x) (= (first x) 'fern/eval)) :eval
     (and (listy? x) (= (first x) 'fern/fern)) :fern
     (listy? x)   :list
     (symbol? x)  :identity
@@ -128,6 +129,15 @@
                  (apply literal target (map (eval-f cfg history) (drop 2 x)))))
     (catch IllegalArgumentException iae
       (throw (unmatched-literal x history iae)))
+    (catch Throwable t
+      (throw (error-while-evaluating x history t)))))
+
+(defmethod do-evaluate :eval [x cfg history]
+  (try
+    (let [target (second x)
+          target (map (eval-f cfg history) target)]
+      (copy-meta x
+        (eval target)))
     (catch Throwable t
       (throw (error-while-evaluating x history t)))))
 
