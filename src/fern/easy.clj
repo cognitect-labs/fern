@@ -47,11 +47,22 @@
   env)
 
 (defn load-environment
+  "Deprecated. Use `load` and pass in a reader.
+
+   Kept for backward compatibility."
   ([path] (load-environment path nil))
   ([path plugin-symbol]
    (cond-> (file->environment path)
      (not (nil? plugin-symbol))
      (load-plugin-namespaces! plugin-symbol))))
+
+(defn load
+  ([reader path] (load reader path []))
+  ([reader path plugin-symbols]
+   (let [env (reader->environment reader path)]
+     (doseq [plugin plugin-symbols]
+       (load-plugin-namespaces! env plugin))
+     env)))
 
 (defn validate!
  "Resolve all of the keys in the environment.
