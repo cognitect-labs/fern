@@ -1,4 +1,5 @@
 (ns fern.easy
+  (:refer-clojure :exclude [load])
   (:require [fern :as f]
             [clojure.java.io :as io]
             [clojure.pprint :refer [pprint]]
