@@ -5,6 +5,7 @@
                  :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.9.0" :scope "provided"]
                  [org.clojure/tools.reader "1.3.0"]
+                 [fipp "0.6.14"]
                  [mvxcvi/puget "1.1.2"]
                  [jline/jline "2.14.2"]]
   :profiles     {:dev {:dependencies [[org.clojure/tools.namespace "0.3.0-alpha3"]]
