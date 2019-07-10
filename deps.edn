@@ -1,5 +1,6 @@
 {:paths ["src"]
- :deps  {org.clojure/tools.reader {:mvn/version "1.0.0-beta4"}
-         fipp                     {:mvn/version "0.6.8"}
-         mvxcvi/puget             {:mvn/version "1.0.1"}
-         jline/jline              {:mvn/version "2.14.2"}}}
+ :deps  {org.clojure/tools.reader    {:mvn/version "1.0.0-beta4"}
+         fipp                        {:mvn/version "0.6.8"}
+         mvxcvi/puget                {:mvn/version "1.0.1"}
+         jline/jline                 {:mvn/version "2.14.2"}
+         org.clojure/core.rrb-vector {:mvn/version "0.0.12"}}}
