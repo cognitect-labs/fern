@@ -9,4 +9,6 @@
                  [mvxcvi/puget "1.1.2"]
                  [jline/jline "2.14.2"]]
   :profiles     {:dev {:dependencies [[org.clojure/tools.namespace "0.3.0-alpha3"]]
-                       :source-paths ["dev"]}})
+                       :source-paths ["dev"]}}
+  :repositories [["releases" {:url "https://repo.clojars.org"
+                              :creds :gpg}]])
