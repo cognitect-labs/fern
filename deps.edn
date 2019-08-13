@@ -1,6 +1,9 @@
 {:paths ["src"]
- :deps  {org.clojure/tools.reader    {:mvn/version "1.0.0-beta4"}
-         fipp                        {:mvn/version "0.6.8"}
-         mvxcvi/puget                {:mvn/version "1.0.1"}
-         jline/jline                 {:mvn/version "2.14.2"}
-         org.clojure/core.rrb-vector {:mvn/version "0.0.12"}}}
+ :deps  {org.clojure/tools.reader    {:mvn/version "1.3.0"}
+         fipp                        {:mvn/version "0.6.14"}
+         mvxcvi/puget                {:mvn/version "1.1.2"}
+         jline/jline                 {:mvn/version "2.14.2"}}
+ :aliases {:test {:extra-paths ["test"] 
+                  :extra-deps {com.cognitect/test-runner {:git/url "https://github.com/cognitect-labs/test-runner.git" 
+                                                          :sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}} 
+                  :main-opts ["-m" "cognitect.test-runner"]}}}
