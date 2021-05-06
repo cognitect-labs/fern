@@ -3,12 +3,12 @@
   :url          "https://github.com/cognitect-labs/fern"
   :license      {:name "Eclipse Public License"
                  :url  "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.10.1" :scope "provided"]
-                 [org.clojure/tools.reader "1.3.0"]
-                 [fipp "0.6.14"]
-                 [mvxcvi/puget "1.1.2"]
+  :dependencies [[org.clojure/clojure "1.10.3" :scope "provided"]
+                 [org.clojure/tools.reader "1.3.5"]
+                 [fipp "0.6.23"]
+                 [mvxcvi/puget "1.3.1"]
                  [jline/jline "2.14.2"]]
-  :profiles     {:dev {:dependencies [[org.clojure/tools.namespace "0.3.0-alpha3"]]
+  :profiles     {:dev {:dependencies [[org.clojure/tools.namespace "1.1.0"]]
                        :source-paths ["dev"]}}
   :repositories [["releases" {:url "https://repo.clojars.org"
                               :creds :gpg}]])
