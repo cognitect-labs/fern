@@ -52,27 +52,27 @@
     '{foo (fern/quote (clojure.core/deref bar))} '(clojure.core/deref bar)
     '{foo (fern/quote (clojure.core/deref bar))} '(clojure.core/deref bar)))
 
-(def sample (fe/file->environment "../fern/test/sample.fern"))
+(def sample (fe/file->environment "test/sample.fern"))
 
 ;; TBD Where is our file name???
 
 (deftest test-metadata
   (testing "value for symbol"
     (are [sym md] (= md (meta (f/evaluate sample sym)))
-         'fullname {:file "../fern/test/sample.fern"
+         'fullname {:file "test/sample.fern"
                     :source "[@fn @ln]"
                     :line 3 :column 11 :end-line 3 :end-column 20}
          'revname  {:source "[\n    [@ln]\n    [@fn]\n  ]"
-                    :file "../fern/test/sample.fern"
+                    :file "test/sample.fern"
                     :line 5 :column 3 :end-line 8 :end-column 4}
          'nameref {:source "[\n    [@ln]\n    [@fn]\n  ]"
-                   :file "../fern/test/sample.fern"
+                   :file "test/sample.fern"
                    :line 5 :column 3 :end-line 8 :end-column 4}))
 
   (testing "components of value for symbol"
     (are [sym extr md] (= md (meta (get-in (f/evaluate sample sym) extr)))
          'revname  [0] {:source "[@ln]"
-                        :file "../fern/test/sample.fern"
+                        :file "test/sample.fern"
                         :line 6 :column 5 :end-line 6 :end-column 10})))
 
 (defn string->environment
